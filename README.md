@@ -1,4 +1,4 @@
 # ece1782
 
 ## LAB1
-[README] (/lab1/README.md)
+[README](/lab1/README.md)
