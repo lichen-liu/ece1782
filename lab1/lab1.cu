@@ -134,8 +134,8 @@ int main(int argc, char *argv[])
 
     /* Copy Host Memory to Device Memory */
     double timestampPreCpuGpuTransfer = getTimeStamp();
-    cudaMemcpy(d_X, h_X, numBytes, cudaMemCpyHostToDevice);
-    cudaMemcpy(d_Y, h_Y, numBytes, cudaMemCpyHostToDevice);
+    cudaMemcpy(d_X, h_X, numBytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_Y, h_Y, numBytes, cudaMemcpyHostToDevice);
 
     /* Run Kernel */
     double timestampPreKernel = getTimeStamp();
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 
     /* Copy Device Memory to Host Memory */
     double timestampPreGpuCpuTransfer = getTimeStamp();
-    cudaMemCpy(h_dZ, d_Z, numBytes, cudaMemCpyDeviceToHost);
+    cudaMemCpy(h_dZ, d_Z, numBytes, cudaMemcpyDeviceToHost);
     double timestampPostGpuCpuTransfer = getTimeStamp();
 
     /* Free Device Memory */
