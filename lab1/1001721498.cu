@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
 #ifndef NDEBUG
         for (int i = 0; i < 8; i++)
         {
-            printf("(%d, %d) CPU=%.6f GPU=%.6f\n", i, i, h_hZ[H_INDEX(i, i)], h_dZ[H_INDEX(i, i)]);
+            printf("(0, %d) CPU=%.6f GPU=%.6f\n", i, i, h_hZ[H_INDEX(0, i)], h_dZ[H_INDEX(0, i)]);
         }
 #endif
     }
