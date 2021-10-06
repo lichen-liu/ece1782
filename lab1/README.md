@@ -1,5 +1,15 @@
 # LAB1
 
+## To Compile
+```
+nvcc lab1.cu -o lab1
+```
+
+## To Run
+```
+./lab1 16384 16384
+```
+
 ## Program Specification
 Write a CUDA program that does the following calculations on two  input matrices, X and Y, to generate an output matrix, Z:
 

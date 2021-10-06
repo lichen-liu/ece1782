@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
     int numBytes = numElem * sizeof(float);
 
 #ifndef NDEBUG
-    printf("numRows=%d, numCols=%d, numElem=%d, numBytes=%d", numRows, numCols, numElem, numBytes);
+    printf("numRows=%d, numCols=%d, numElem=%d, numBytes=%d\n", numRows, numCols, numElem, numBytes);
 #endif
 
     /* Allocate Host Memory */
