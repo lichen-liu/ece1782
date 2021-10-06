@@ -85,7 +85,7 @@ __host__ int checkZ(float *E, float *A, int numRows, int numCols)
 
 __global__ void f_siggen()
 {
-    // wip
+    // WIP
 }
 
 int main(int argc, char *argv[])
@@ -99,16 +99,25 @@ int main(int argc, char *argv[])
     int numRows = atoi(argv[1]);
     int numCols = atoi(argv[2]);
     int numElem = numRows * numCols;
+    int numBytes = numElem * sizeof(float);
 
 #ifndef NDEBUG
-    printf("numRows=%d, numCols=%d, numElem=%d", numRows, numCols, numElem);
+    printf("numRows=%d, numCols=%d, numElem=%d, numBytes=%d", numRows, numCols, numElem, numBytes);
 #endif
 
     /* Allocate Host Memory */
-    float *h_X = (float *)malloc(sizeof(float) * numElem);
-    float *h_Y = (float *)malloc(sizeof(float) * numElem);
-    float *h_hZ = (float *)malloc(sizeof(float) * numElem);
-    float *h_dZ = (float *)malloc(sizeof(float) * numElem);
+    float *h_X = (float *)malloc(numBytes);
+    float *h_Y = (float *)malloc(numBytes);
+    float *h_hZ = (float *)malloc(numBytes);
+    float *h_dZ = (float *)malloc(numBytes);
+    // TODO:
+    // float *h_X = NULL;
+    // float *h_Y = NULL;
+    // float *h_hZ = (float *)malloc(numBytes);
+    // float *h_dZ = NULL;
+    // cudaHostAlloc((void **)&h_X, numBytes, 0);
+    // cudaHostAlloc((void **)&h_Y, numBytes, 0);
+    // cudaHostAlloc((void **)&h_dZ, numBytes, cudaHostAllocWriteCombined);
 
     /* Initialize Host Memory */
     initX(h_X, numRows, numCols);
@@ -116,24 +125,41 @@ int main(int argc, char *argv[])
     f_siggen_reference(h_X, h_Y, h_hZ, numRows, numCols);
 
     /* Allocate Device Memory */
+    float *d_X = NULL;
+    float *d_Y = NULL;
+    float *d_Z = NULL;
+    cudaMalloc((void **)&d_X, numBytes);
+    cudaMalloc((void **)&d_Y, numBytes);
+    cudaMalloc((void **)&d_Z, numBytes);
 
     /* Copy Host Memory to Device Memory */
     double timestampPreCpuGpuTransfer = getTimeStamp();
+    cudaMemcpy(d_X, h_X, numBytes, cudaMemCpyHostToDevice);
+    cudaMemcpy(d_Y, h_Y, numBytes, cudaMemCpyHostToDevice);
 
-    /* Launch Kernel */
+    /* Run Kernel */
     double timestampPreKernel = getTimeStamp();
     dim3 gridDim;
     dim3 blockDim;
-    size_t d_size_smem = 0;
-    f_siggen<<<gridDim, blockDim, d_size_smem>>>();
-    // sync
+    size_t d_sizeSmem = 0;
+    f_siggen<<<gridDim, blockDim, d_sizeSmem>>>(); // WIP
+    cudaDeviceSynchronize();
 
     /* Copy Device Memory to Host Memory */
     double timestampPreGpuCpuTransfer = getTimeStamp();
-
+    cudaMemCpy(h_dZ, d_Z, numBytes, cudaMemCpyDeviceToHost);
     double timestampPostGpuCpuTransfer = getTimeStamp();
 
+    /* Free Device Memory */
+    cudaFree(d_Z);
+    d_Z = NULL;
+    cudaFree(d_Y);
+    d_Y = NULL;
+    cudaFree(d_X);
+    d_X = NULL;
+
     /* Clean Up Device Resource */
+    cudaDeviceReset();
 
     /* Verify Device Result with Host Result */
     int isMatching = checkZ(h_hZ, h_dZ, numRows, numCols);
@@ -167,4 +193,13 @@ int main(int argc, char *argv[])
     h_Y = NULL;
     free(h_X);
     h_X = NULL;
+    // TODO:
+    // cudaFreeHost(h_dZ);
+    // h_dZ = NULL;
+    // free(h_hZ);
+    // h_hZ = NULL;
+    // cudaFreeHost(h_Y);
+    // h_Y = NULL;
+    // cudaFreeHost(h_X);
+    // h_X = NULL;
 }
