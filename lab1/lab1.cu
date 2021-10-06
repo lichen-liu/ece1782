@@ -83,7 +83,7 @@ __host__ int checkZ(float *E, float *A, int numRows, int numCols)
     return 1;
 }
 
-__global__ void f_siggen()
+__global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols)
 {
     // WIP
 }
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
     dim3 gridDim;
     dim3 blockDim;
     size_t d_sizeSmem = 0;
-    f_siggen<<<gridDim, blockDim, d_sizeSmem>>>(); // WIP
+    f_siggen<<<gridDim, blockDim, d_sizeSmem>>>(d_X, d_Y, d_Z, numRows, numCols); // WIP
     cudaDeviceSynchronize();
 
     /* Copy Device Memory to Host Memory */
