@@ -5,6 +5,8 @@
 // Comment out this line to enable debug mode
 // #define NDEBUG
 
+#define H_INDEX(i, j) (i) * numCols + (j)
+
 /* time stamp function in seconds */
 __host__ double getTimeStamp()
 {
@@ -176,12 +178,15 @@ int main(int argc, char *argv[])
         float gpuCpuTransferElapsed = timestampPostGpuCpuTransfer - timestampPreGpuCpuTransfer;
         int zValueI = 5;
         int zValueJ = 5;
-        float zValue = h_dZ[zValueI * numCols + zValueJ];
+        float zValue = h_dZ[H_INDEX(zValueI, zValueJ)];
         printf("%.6f %.6f %.6f %.6f %.6f\n", totalGpuElapased, cpuGpuTransferElapsed, kernelElapsed, gpuCpuTransferElapsed, zValue);
     }
     else
     {
         printf("Error: GPU result does not with CPU result\n");
+#ifndef NDEBUG
+        printf("CPU:%.6f GPU:%.6f\n", h_hZ[H_INDEX(5, 5)], h_dZ[H_INDEX(5, 5)]);
+#endif
     }
 
     /* Free Host Memory */
