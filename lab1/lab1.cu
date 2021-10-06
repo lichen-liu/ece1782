@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 
     /* Copy Device Memory to Host Memory */
     double timestampPreGpuCpuTransfer = getTimeStamp();
-    cudaMemCpy(h_dZ, d_Z, numBytes, cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_dZ, d_Z, numBytes, cudaMemcpyDeviceToHost);
     double timestampPostGpuCpuTransfer = getTimeStamp();
 
     /* Free Device Memory */
