@@ -124,7 +124,14 @@ int main(int argc, char *argv[])
     /* Initialize Host Memory */
     initX(h_X, numRows, numCols);
     initY(h_Y, numRows, numCols);
+#ifndef NDEBUG
+    double timestampPreCpuKernel = getTimeStamp();
+#endif
     f_siggen_reference(h_X, h_Y, h_hZ, numRows, numCols);
+#ifndef NDEBUG
+    double timestampPostCpuKernel = getTimeStamp();
+    printf("CPU=%.6fsec\n", timestampPostCpuKernel - timestampPreCpuKernel);
+#endif
 
     /* Allocate Device Memory */
     float *d_X = NULL;
@@ -185,7 +192,7 @@ int main(int argc, char *argv[])
     {
         printf("Error: GPU result does not with CPU result\n");
 #ifndef NDEBUG
-        printf("CPU:%.6f GPU:%.6f\n", h_hZ[H_INDEX(5, 5)], h_dZ[H_INDEX(5, 5)]);
+        printf("CPU=%.6f GPU=%.6f\n", h_hZ[H_INDEX(5, 5)], h_dZ[H_INDEX(5, 5)]);
 #endif
     }
 
