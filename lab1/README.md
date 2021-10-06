@@ -2,12 +2,12 @@
 
 ## To Compile
 ```
-nvcc lab1.cu -o lab1
+nvcc 1001721498.cu -o 1001721498
 ```
 
 ## To Run
 ```
-./lab1 16384 16384
+./1001721498 16384 16384
 ```
 
 ## Program Specification

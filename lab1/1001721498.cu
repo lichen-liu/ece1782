@@ -87,6 +87,12 @@ __host__ int checkZ(float *E, float *A, int numRows, int numCols)
 
 __global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols)
 {
+    int globalX = blockDim.x * blockIdx.x + threadIdx.x;
+    int globalY = blockDim.y * blockIdx.y + threadIdx.y;
+
+    if (globalX >= numCols || globalY >= numRows)
+        return;
+
     // WIP
 }
 
@@ -192,7 +198,10 @@ int main(int argc, char *argv[])
     {
         printf("Error: GPU result does not with CPU result\n");
 #ifndef NDEBUG
-        printf("CPU=%.6f GPU=%.6f\n", h_hZ[H_INDEX(5, 5)], h_dZ[H_INDEX(5, 5)]);
+        for (int i = 0; i < 8; i++)
+        {
+            printf("(%d, %d) CPU=%.6f GPU=%.6f\n", i, i, h_hZ[H_INDEX(i, i)], h_dZ[H_INDEX(i, i)]);
+        }
 #endif
     }
 
