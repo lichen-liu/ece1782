@@ -100,11 +100,11 @@ int main(int argc, char *argv[])
     }
     int numRows = atoi(argv[1]);
     int numCols = atoi(argv[2]);
-    int numElem = numRows * numCols;
-    int numBytes = numElem * sizeof(float);
+    size_t numElem = numRows * numCols;
+    size_t numBytes = numElem * sizeof(float);
 
 #ifndef NDEBUG
-    printf("numRows=%d, numCols=%d, numElem=%d, numBytes=%d\n", numRows, numCols, numElem, numBytes);
+    printf("numRows=%d, numCols=%d, numElem=%ld, numBytes=%ld\n", numRows, numCols, numElem, numBytes);
 #endif
 
     /* Allocate Host Memory */
