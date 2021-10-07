@@ -327,8 +327,7 @@ int main(int argc, char *argv[])
     d_X = NULL;
 
     /* Verify Device Result with Host Result */
-    // error = error || !checkZ(h_hZ_old, h_dZ_old, numRows, numCols);
-    error = error || !checkZ(h_hZ_old, h_hZ, numRows, numCols);
+    error = error || !checkZ(h_hZ, h_dZ_old, numRows, numCols);
 
     /* Output */
 #ifndef NDEBUG
@@ -353,18 +352,11 @@ int main(int argc, char *argv[])
     {
         printf("Error: GPU result does not with CPU result\n");
 #ifndef NDEBUG
-        // for (int i = 0; i < 4; i++)
-        // {
-        //     for (int j = 0; j < 4; j++)
-        //     {
-        //         printf("(i=%d, j=%d), CPU=%.6f, GPU=%.6f, X=%.6f, Y=%.6f\n", i, j, h_hZ_old[H_INDEX(i, j)], h_dZ_old[H_INDEX(i, j)], h_X_old[H_INDEX(i, j)], h_Y_old[H_INDEX(i, j)]);
-        //     }
-        // }
         for (int i = 0; i < 4; i++)
         {
             for (int j = 0; j < 4; j++)
             {
-                printf("(i=%d, j=%d), CPU=%.6f, CPU_V2=%.6f, X=%.6f, Y=%.6f\n", i, j, h_hZ_old[H_INDEX(i, j)], h_hZ[H_INDEX(i, j)], h_X_old[H_INDEX(i, j)], h_Y_old[H_INDEX(i, j)]);
+                printf("(i=%d, j=%d), CPU=%.6f, GPU=%.6f, X=%.6f, Y=%.6f\n", i, j, h_hZ[H_INDEX(i, j)], h_dZ_old[H_INDEX(i, j)], h_X_old[H_INDEX(i, j)], h_Y_old[H_INDEX(i, j)]);
             }
         }
 #endif
