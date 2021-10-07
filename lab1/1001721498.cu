@@ -41,7 +41,7 @@ __host__ void initY_old(float *Y, int numRows, int numCols)
 
 __host__ void initX(float *X, int numRows, int numCols)
 {
-    int lastIBase = (numRows - 1) * numCols;
+    int lastIBase = (numRows + 1) * numCols;
     for (int j = 0; j < numCols; j++)
     {
         X[j] = 0;
