@@ -108,6 +108,7 @@ __global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols,
     int s_XTx = threadIdx.y + 1;
     int s_XTy = threadIdx.x;
     int s_XTIdx = s_XTy * s_XTWidth + s_XTx;
+    s_XT[s_XTIdx] = X[globalXIdx];
     if (threadIdx.y == 0)
     {
         s_XT[s_XTIdx - 1] = X[globalXIdx - numCols];
@@ -116,18 +117,17 @@ __global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols,
     {
         s_XT[s_XTIdx + 1] = X[globalXIdx + numCols];
     }
-    s_XT[s_XTIdx] = X[globalXIdx];
 
     /* Set Up s_Y */
     int s_Yx = threadIdx.x + 2;
     int s_Yy = threadIdx.y;
     int s_YIdx = s_Yy * (blockDim.x + 2) + s_Yx;
+    s_Y[s_YIdx] = Y[globalYIdx];
     if (threadIdx.x == 0)
     {
         s_Y[s_YIdx - 2] = Y[globalYIdx - 2];
         s_Y[s_YIdx - 1] = Y[globalYIdx - 1];
     }
-    s_Y[s_YIdx] = Y[globalYIdx];
 
     /* Wait for All to Set Up s_XT and s_Y */
     __syncthreads();
