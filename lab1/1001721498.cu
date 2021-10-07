@@ -90,7 +90,7 @@ __global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols,
     extern __shared__ float s_data[];
     float *s_XT = s_data; // blockDim.x * (blockDim.y + 2);
     int s_XTWidth = (blockDim.y + 2);
-    int s_XTHeight = blockDim.x;
+    // int s_XTHeight = blockDim.x;
     float *s_Y = s_XT + smemNumElemX; // (blockDim.x + 2) * blockDim.y;
 
     /* Global Coordinate */
@@ -143,7 +143,7 @@ __global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols,
     __syncthreads();
 
     /* Write Output */
-    Z[globalIdx] = sX[s_XT_idx - 1] + s_XT[s_XT_idx] + sX[s_XT_idx + 1] + s_Y[s_Y_idx - 2] + s_Y[s_Y_idx - 1] + s_Y[s_Y_idx];
+    Z[globalIdx] = s_XT[s_XT_idx - 1] + s_XT[s_XT_idx] + s_XT[s_XT_idx + 1] + s_Y[s_Y_idx - 2] + s_Y[s_Y_idx - 1] + s_Y[s_Y_idx];
 }
 
 int main(int argc, char *argv[])
@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
     int d_smemNumElemY = (d_blockDim.x + 2) * d_blockDim.y;
     size_t d_smemNumBytes = (d_smemNumElemX + d_smemNumElemY) * sizeof(float);
     f_siggen<<<d_gridDim, d_blockDim, d_smemNumBytes>>>(d_X, d_Y, d_Z, numRows, numCols, d_smemNumElemX);
-    cudaDevices_synchronize();
+    cudaDeviceSynchronize();
 
     /* Copy Device Memory to Host Memory */
     double timestampPreGpuCpuTransfer = getTimeStamp();
