@@ -50,7 +50,8 @@ If an error occurs, then your program should output one line starting with “Er
 
 The two input matrices shall be initialized host-side (before copying them to GPU global memory) as follows:
 * ```h_X[i,j] = (float) (i+j)/2.0 ;```
-* ```h_Y[i,j] = (float) 3.25*(i+j) ;```  
+* ```h_Y[i,j] = (float) 3.25*(i+j) ;```
+  
 The result matrix produced on the GPU, here called `d_Z`, should be copied back to CPU memory (perhaps into `h_dZ`) and -- to check correctness -- should be compared against the result of the same calculation performed entirely CPU-side (perhaps generating `h_hZ`). Your code must do this comparison, and if there is a discrepancy, an error message must be output (instead of the numbers).
 
 ## Deliverables
