@@ -196,8 +196,8 @@ int main(int argc, char *argv[])
     float *d_X = NULL;
     float *d_Y = NULL;
     float *d_Z = NULL;
-    error = error || cudaMalloc((void **)&d_X, numBytes);
-    error = error || cudaMalloc((void **)&d_Y, numBytes);
+    error = error || cudaMalloc((void **)&d_X, numBytesX);
+    error = error || cudaMalloc((void **)&d_Y, numBytesY);
     error = error || cudaMalloc((void **)&d_Z, numBytes);
     if (error)
     {
@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
     error = error || cudaMemcpy(d_Y, h_Y, numBytesY, cudaMemcpyHostToDevice);
     if (error)
     {
-        printf("Error: cudaMemcpy returns error %d\n", error);
+        printf("Error: cudaMemcpy returns error\n", error);
         return 0;
     }
 
