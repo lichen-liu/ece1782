@@ -73,34 +73,6 @@ __host__ void initY(float *Y, int numRows, int numCols)
     }
 }
 
-__host__ float f_siggen_reference_get(float *M, int i, int j, int numRows, int numCols)
-{
-    if (i < 0 || i >= numRows || j < 0 || j >= numCols)
-    {
-        return 0;
-    }
-    return M[i * numCols + j];
-}
-
-__host__ void f_siggen_reference_old(float *X, float *Y, float *Z, int numRows, int numCols)
-{
-    for (int i = 0; i < numRows; i++)
-    {
-        int ibase = i * numCols;
-        for (int j = 0; j < numCols; j++)
-        {
-            // Z[i,j] = X[i-1,j] + X[i,j] + X[i+1,j] – Y[i,j-2] – Y[i,j-1] – Y[i,j]
-            Z[ibase + j] =
-                f_siggen_reference_get(X, i - 1, j, numRows, numCols) +
-                f_siggen_reference_get(X, i, j, numRows, numCols) +
-                f_siggen_reference_get(X, i + 1, j, numRows, numCols) -
-                f_siggen_reference_get(Y, i, j - 2, numRows, numCols) -
-                f_siggen_reference_get(Y, i, j - 1, numRows, numCols) -
-                f_siggen_reference_get(Y, i, j, numRows, numCols);
-        }
-    }
-}
-
 #define H_ADJ_INDEX_X(i, j) ((i) + 1) * numCols + (j)
 #define H_ADJ_INDEX_Y(i, j) (i) * (numCols + 2) + (j) + 2
 #define H_INDEX(i, j) (i) * numCols + (j)
@@ -235,7 +207,6 @@ int main(int argc, char *argv[])
     // old
     float *h_X_old = NULL;
     float *h_Y_old = NULL;
-    float *h_hZ_old = (float *)malloc(numBytes);
     float *h_dZ_old = NULL;
     error = error || cudaHostAlloc((void **)&h_X_old, numBytes, 0);
     error = error || cudaHostAlloc((void **)&h_Y_old, numBytes, 0);
@@ -264,7 +235,6 @@ int main(int argc, char *argv[])
 #ifndef NDEBUG
     double timestampPreCpuKernel = getTimeStamp();
 #endif
-    f_siggen_reference_old(h_X_old, h_Y_old, h_hZ_old, numRows, numCols);
     f_siggen_reference(h_X, h_Y, h_hZ, numRows, numCols);
 #ifndef NDEBUG
     double timestampPostCpuKernel = getTimeStamp();
@@ -363,14 +333,22 @@ int main(int argc, char *argv[])
     }
 
     /* Free Host Memory */
+    // old
     cudaFreeHost(h_dZ_old);
     h_dZ_old = NULL;
-    free(h_hZ_old);
-    h_hZ_old = NULL;
     cudaFreeHost(h_Y_old);
     h_Y_old = NULL;
     cudaFreeHost(h_X_old);
     h_X_old = NULL;
+    // new
+    cudaFreeHost(h_dZ);
+    h_dZ = NULL;
+    free(h_hZ);
+    h_hZ = NULL;
+    cudaFreeHost(h_Y);
+    h_Y = NULL;
+    cudaFreeHost(h_X);
+    h_X = NULL;
 
     /* Clean Up Device Resource */
     cudaDeviceReset();
