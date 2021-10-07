@@ -69,7 +69,7 @@ __host__ void f_siggen_reference(float *X, float *Y, float *Z, int numRows, int 
     }
 }
 
-int checkZ(float *E, float *A, int numRows, int numCols)
+__host__ int checkZ(float *E, float *A, int numRows, int numCols)
 {
     for (int i = 0; i < numRows; i++)
     {
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
     cudaDeviceReset();
 
     printf("save my ass\n");
-    h_dZ[0];
+    printf("value=%f\n", h_dZ[0]);
     printf("kiss my ass\n");
     /* Verify Device Result with Host Result */
     error = error || !checkZ(h_hZ, h_dZ, numRows, numCols);
