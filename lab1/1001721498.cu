@@ -165,10 +165,6 @@ int main(int argc, char *argv[])
 #endif
 
     /* Allocate Host Memory */
-    // float *h_X = (float *)malloc(numBytes);
-    // float *h_Y = (float *)malloc(numBytes);
-    // float *h_hZ = (float *)malloc(numBytes);
-    // float *h_dZ = (float *)malloc(numBytes);
     float *h_X = NULL;
     float *h_Y = NULL;
     float *h_hZ = (float *)malloc(numBytes);
@@ -259,9 +255,9 @@ int main(int argc, char *argv[])
 
     if (!error)
     {
-#ifndef NDEBUG
-        printf("<total_GPU_time> <CPU_GPU_transfer_time> <kernel_time> <GPU_CPU_transfer_time> <Z-value> <nl>\n");
-#endif
+        // #ifndef NDEBUG
+        //         printf("<total_GPU_time> <CPU_GPU_transfer_time> <kernel_time> <GPU_CPU_transfer_time> <Z-value> <nl>\n");
+        // #endif
         float totalGpuElapased = timestampPostGpuCpuTransfer - timestampPreCpuGpuTransfer;
         float cpuGpuTransferElapsed = timestampPreKernel - timestampPreCpuGpuTransfer;
         float kernelElapsed = timestampPreGpuCpuTransfer - timestampPreKernel;
@@ -286,14 +282,6 @@ int main(int argc, char *argv[])
     }
 
     /* Free Host Memory */
-    // free(h_dZ);
-    // h_dZ = NULL;
-    // free(h_hZ);
-    // h_hZ = NULL;
-    // free(h_Y);
-    // h_Y = NULL;
-    // free(h_X);
-    // h_X = NULL;
     cudaFreeHost(h_dZ);
     h_dZ = NULL;
     free(h_hZ);
