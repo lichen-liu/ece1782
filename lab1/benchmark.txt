@@ -15,3 +15,8 @@ d_gridDim=(1024, 256), d_blockDim=(16, 64)
 numRows=16384, numCols=16384, numElem=268435456, numBytes=1073741824
 d_gridDim=(1024, 512), d_blockDim=(16, 32)
 0.293456 0.178550 0.026761 0.088145 -72.750000
+
+numRows=32768, numCols=8192, numElem=268435456, numBytes=1073741824
+CPU=6.909372sec
+d_gridDim=(256, 1024), d_blockDim=(32, 32)
+0.304526 0.181989 0.030038 0.092499 -72.750000
