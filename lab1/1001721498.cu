@@ -243,16 +243,16 @@ int main(int argc, char *argv[])
     }
     double timestampPostGpuCpuTransfer = getTimeStamp();
 
-    /* Free Device Memory */
-    cudaFree(d_Z);
-    d_Z = NULL;
-    cudaFree(d_Y);
-    d_Y = NULL;
-    cudaFree(d_X);
-    d_X = NULL;
+    // /* Free Device Memory */
+    // cudaFree(d_Z);
+    // d_Z = NULL;
+    // cudaFree(d_Y);
+    // d_Y = NULL;
+    // cudaFree(d_X);
+    // d_X = NULL;
 
-    /* Clean Up Device Resource */
-    cudaDeviceReset();
+    // /* Clean Up Device Resource */
+    // cudaDeviceReset();
 
     printf("save my ass\n");
     printf("value=%f\n", h_dZ[0]);
