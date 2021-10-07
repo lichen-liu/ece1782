@@ -14,6 +14,13 @@ nvcc 1001721498.cu -o 1001721498 -res-usage -D NDEBUG
 ./1001721498 30 8947850
 ```
 
+## To Prof
+```
+nvprof ./1001721498 16384 16384
+nvprof ./1001721498 32768 8192
+nvprof ./1001721498 30 8947850
+```
+
 ## Program Specification
 Write a CUDA program that does the following calculations on two  input matrices, X and Y, to generate an output matrix, Z:
 
