@@ -164,18 +164,18 @@ int main(int argc, char *argv[])
 #endif
 
     /* Allocate Host Memory */
-    float *h_X = (float *)malloc(numBytes);
-    float *h_Y = (float *)malloc(numBytes);
-    float *h_hZ = (float *)malloc(numBytes);
-    float *h_dZ = (float *)malloc(numBytes);
-    // TODO:
-    // float *h_X = NULL;
-    // float *h_Y = NULL;
+    // float *h_X = (float *)malloc(numBytes);
+    // float *h_Y = (float *)malloc(numBytes);
     // float *h_hZ = (float *)malloc(numBytes);
-    // float *h_dZ = NULL;
-    // cudaHostAlloc((void **)&h_X, numBytes, 0);
-    // cudaHostAlloc((void **)&h_Y, numBytes, 0);
-    // cudaHostAlloc((void **)&h_dZ, numBytes, cudaHostAllocWriteCombined);
+    // float *h_dZ = (float *)malloc(numBytes);
+    // TODO:
+    float *h_X = NULL;
+    float *h_Y = NULL;
+    float *h_hZ = (float *)malloc(numBytes);
+    float *h_dZ = NULL;
+    cudaHostAlloc((void **)&h_X, numBytes, 0);
+    cudaHostAlloc((void **)&h_Y, numBytes, 0);
+    cudaHostAlloc((void **)&h_dZ, numBytes, cudaHostAllocWriteCombined);
 
     /* Initialize Host Memory */
     initX(h_X, numRows, numCols);
@@ -269,21 +269,21 @@ int main(int argc, char *argv[])
     }
 
     /* Free Host Memory */
-    free(h_dZ);
-    h_dZ = NULL;
-    free(h_hZ);
-    h_hZ = NULL;
-    free(h_Y);
-    h_Y = NULL;
-    free(h_X);
-    h_X = NULL;
-    // TODO:
-    // cudaFreeHost(h_dZ);
+    // free(h_dZ);
     // h_dZ = NULL;
     // free(h_hZ);
     // h_hZ = NULL;
-    // cudaFreeHost(h_Y);
+    // free(h_Y);
     // h_Y = NULL;
-    // cudaFreeHost(h_X);
+    // free(h_X);
     // h_X = NULL;
+    // TODO:
+    cudaFreeHost(h_dZ);
+    h_dZ = NULL;
+    free(h_hZ);
+    h_hZ = NULL;
+    cudaFreeHost(h_Y);
+    h_Y = NULL;
+    cudaFreeHost(h_X);
+    h_X = NULL;
 }
