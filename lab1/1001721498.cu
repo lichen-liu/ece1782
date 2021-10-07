@@ -232,7 +232,7 @@ int main(int argc, char *argv[])
 
     /* Copy Device Memory to Host Memory */
     double timestampPreGpuCpuTransfer = getTimeStamp();
-    error = error || cudaMemcpy(h_dZ_old, d_Z, numBytes, cudaMemcpyDeviceToHost);
+    error = error || cudaMemcpy(h_dZ, d_Z, numBytes, cudaMemcpyDeviceToHost);
     if (error)
     {
         printf("Error: cudaMemcpy returns error\n");
@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
     d_X = NULL;
 
     /* Verify Device Result with Host Result */
-    error = error || !checkZ(h_hZ, h_dZ_old, numRows, numCols);
+    error = error || !checkZ(h_hZ, h_dZ, numRows, numCols);
 
     /* Output */
 #ifndef NDEBUG
