@@ -4,6 +4,7 @@
 ```
 nvcc 1001721498.cu -o 1001721498
 nvcc 1001721498.cu -o 1001721498 -res-usage
+nvcc 1001721498.cu -o 1001721498 -res-usage -D NDEBUG
 ```
 
 ## To Run
