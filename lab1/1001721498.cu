@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 
     /* Output */
 #ifndef NDEBUG
-    printf("d_gridDim=(%d, %d), d_blockDim=(%d, %d)\n", d_gridDim.x, d_gridDim.y, d_blockDim.x, d_blockDim.y);
+    printf("d_gridDim=(%d, %d), d_blockDim=(%d, %d), d_smemNumBytes=%ld\n", d_gridDim.x, d_gridDim.y, d_blockDim.x, d_blockDim.y, d_smemNumBytes);
 #endif
 
     if (!error)
