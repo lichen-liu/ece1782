@@ -167,12 +167,12 @@ int main(int argc, char *argv[])
 #endif
 
     /* Allocate Host Memory */
-    float *h_XY = NULL;
-    error = error || cudaHostAlloc((void **)&h_XY, numBytesX + numBytesY, 0);
-    float *h_X = h_XY;
-    float *h_Y = h_X + numElemX;
+    float *h_X = NULL;
+    float *h_Y = NULL;
     float *h_hZ = (float *)malloc(numBytes);
     float *h_dZ = NULL;
+    error = error || cudaHostAlloc((void **)&h_X, numBytesX, 0);
+    error = error || cudaHostAlloc((void **)&h_Y, numBytesY, 0);
     error = error || cudaHostAlloc((void **)&h_dZ, numBytes, 0);
     if (error)
     {
@@ -193,11 +193,11 @@ int main(int argc, char *argv[])
 #endif
 
     /* Allocate Device Memory */
-    float *d_XY = NULL;
-    error = error || cudaMalloc((void **)&d_XY, numBytesX + numBytesY);
-    float *d_X = d_XY;
-    float *d_Y = d_X + numElemX;
+    float *d_X = NULL;
+    float *d_Y = NULL;
     float *d_Z = NULL;
+    error = error || cudaMalloc((void **)&d_X, numBytesX);
+    error = error || cudaMalloc((void **)&d_Y, numBytesY);
     error = error || cudaMalloc((void **)&d_Z, numBytes);
     if (error)
     {
@@ -207,7 +207,8 @@ int main(int argc, char *argv[])
 
     /* Copy Host Memory to Device Memory */
     double timestampPreCpuGpuTransfer = getTimeStamp();
-    error = error || cudaMemcpy(d_XY, h_XY, numBytesX + numBytesY, cudaMemcpyHostToDevice);
+    error = error || cudaMemcpy(d_X, h_X, numBytesX, cudaMemcpyHostToDevice);
+    error = error || cudaMemcpy(d_Y, h_Y, numBytesY, cudaMemcpyHostToDevice);
     if (error)
     {
         printf("Error: cudaMemcpy returns error\n", error);
@@ -241,10 +242,10 @@ int main(int argc, char *argv[])
     /* Free Device Memory */
     cudaFree(d_Z);
     d_Z = NULL;
+    cudaFree(d_Y);
     d_Y = NULL;
+    cudaFree(d_X);
     d_X = NULL;
-    cudaFree(d_XY);
-    d_XY = NULL;
 
     /* Verify Device Result with Host Result */
     error = error || !checkZ(h_hZ, h_dZ, numRows, numCols);
@@ -287,10 +288,10 @@ int main(int argc, char *argv[])
     h_dZ = NULL;
     free(h_hZ);
     h_hZ = NULL;
+    cudaFreeHost(h_Y);
     h_Y = NULL;
+    cudaFreeHost(h_X);
     h_X = NULL;
-    cudaFreeHost(h_XY);
-    h_XY = NULL;
 
     /* Clean Up Device Resource */
     cudaDeviceReset();
