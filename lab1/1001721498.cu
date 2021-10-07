@@ -47,9 +47,9 @@ __host__ void initX(float *X, int numRowsX, int numColsX)
         X[j] = 0;
         X[lastIBase + j] = 0;
     }
-    for (int i = 1; i < numRowsX - 1; i++)
+    for (int i = 0; i < numRowsX - 2; i++)
     {
-        int iBase = i * numColsX;
+        int iBase = (i + 1) * numColsX;
         for (int j = 0; j < numColsX; j++)
         {
             // h_X_old[i,j] = (float) (i+j)/2.0;
@@ -65,10 +65,10 @@ __host__ void initY(float *Y, int numRowsY, int numColsY)
         int iBase = i * numColsY;
         Y[iBase] = 0;
         Y[iBase + 1] = 0;
-        for (int j = 2; j < numColsY; j++)
+        for (int j = 0; j < numColsY - 2; j++)
         {
             // h_Y_old[i,j] = (float) 3.25*(i+j);
-            Y[iBase + j] = (float)3.25 * (i + j);
+            Y[iBase + j + 2] = (float)3.25 * (i + j);
         }
     }
 }
@@ -101,9 +101,9 @@ __host__ void f_siggen_reference_old(float *X, float *Y, float *Z, int numRows, 
     }
 }
 
-#define H_ADJ_INDEX_X(i, j) (((i) + 1) * numCols + (j))
-#define H_ADJ_INDEX_Y(i, j) ((i) * (numCols + 2) + (j) + 2)
-#define H_INDEX(i, j) ((i) * numCols + (j))
+#define H_ADJ_INDEX_X(i, j) ((i) + 1) * numCols + (j)
+#define H_ADJ_INDEX_Y(i, j) (i) * (numCols + 2) + (j) + 2
+#define H_INDEX(i, j) (i) * numCols + (j)
 
 __host__ void f_siggen_reference(float *X, float *Y, float *Z, int numRows, int numCols)
 {
