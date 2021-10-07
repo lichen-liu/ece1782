@@ -219,8 +219,8 @@ int main(int argc, char *argv[])
     d_blockDim.x = 32;
     d_blockDim.y = 32;
     dim3 d_gridDim;
-    d_gridDim.x = max(1, (numCols + 1) / d_blockDim.x);
-    d_gridDim.y = max(1, (numRows + 1) / d_blockDim.y);
+    d_gridDim.x = (numCols - 1) / d_blockDim.x + 1;
+    d_gridDim.y = (numRows - 1) / d_blockDim.y + 1;
     int d_smemNumElemX = d_blockDim.x * (d_blockDim.y + 2);
     int d_smemNumElemY = (d_blockDim.x + 2) * d_blockDim.y;
     size_t d_smemNumBytes = (d_smemNumElemX + d_smemNumElemY) * sizeof(float);
