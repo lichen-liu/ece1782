@@ -76,7 +76,6 @@ __host__ int checkZ(float *E, float *A, int numRows, int numCols)
         int ibase = i * numCols;
         for (int j = 0; j < numCols; j++)
         {
-            printf("i=%d j=%d idx=%d\n", i, j, ibase + j);
             if (E[ibase + j] != A[ibase + j])
             {
                 return 0;
@@ -170,7 +169,6 @@ int main(int argc, char *argv[])
     // float *h_Y = (float *)malloc(numBytes);
     // float *h_hZ = (float *)malloc(numBytes);
     // float *h_dZ = (float *)malloc(numBytes);
-    // TODO:
     float *h_X = NULL;
     float *h_Y = NULL;
     float *h_hZ = (float *)malloc(numBytes);
@@ -243,20 +241,14 @@ int main(int argc, char *argv[])
     }
     double timestampPostGpuCpuTransfer = getTimeStamp();
 
-    // /* Free Device Memory */
-    // cudaFree(d_Z);
-    // d_Z = NULL;
-    // cudaFree(d_Y);
-    // d_Y = NULL;
-    // cudaFree(d_X);
-    // d_X = NULL;
+    /* Free Device Memory */
+    cudaFree(d_Z);
+    d_Z = NULL;
+    cudaFree(d_Y);
+    d_Y = NULL;
+    cudaFree(d_X);
+    d_X = NULL;
 
-    // /* Clean Up Device Resource */
-    // cudaDeviceReset();
-
-    printf("save my ass\n");
-    printf("value=%f\n", h_dZ[0]);
-    printf("kiss my ass\n");
     /* Verify Device Result with Host Result */
     error = error || !checkZ(h_hZ, h_dZ, numRows, numCols);
 
@@ -302,7 +294,6 @@ int main(int argc, char *argv[])
     // h_Y = NULL;
     // free(h_X);
     // h_X = NULL;
-    // TODO:
     cudaFreeHost(h_dZ);
     h_dZ = NULL;
     free(h_hZ);
@@ -311,4 +302,7 @@ int main(int argc, char *argv[])
     h_Y = NULL;
     cudaFreeHost(h_X);
     h_X = NULL;
+
+    /* Clean Up Device Resource */
+    cudaDeviceReset();
 }
