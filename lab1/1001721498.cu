@@ -62,7 +62,7 @@ __host__ void initY(float *Y, int numRows, int numCols)
 {
     for (int i = 0; i < numRows; i++)
     {
-        int iBase = i * numCols;
+        int iBase = i * (numCols + 2);
         Y[iBase] = 0;
         Y[iBase + 1] = 0;
         for (int j = 0; j < numCols; j++)
