@@ -112,7 +112,6 @@ __global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols,
     {
         s_XT[s_XTIdx - 1] = X[globalXIdx - numCols];
     }
-
     if (threadIdx.y == blockDim.y - 1 || globalY == numRows - 1)
     {
         s_XT[s_XTIdx + 1] = X[globalXIdx + numCols];
@@ -208,8 +207,8 @@ int main(int argc, char *argv[])
 
     /* Copy Host Memory to Device Memory */
     double timestampPreCpuGpuTransfer = getTimeStamp();
-    error = error || cudaMemcpy(d_X, h_X, numBytes, cudaMemcpyHostToDevice);
-    error = error || cudaMemcpy(d_Y, h_Y, numBytes, cudaMemcpyHostToDevice);
+    error = error || cudaMemcpy(d_X, h_X, numBytesX, cudaMemcpyHostToDevice);
+    error = error || cudaMemcpy(d_Y, h_Y, numBytesY, cudaMemcpyHostToDevice);
     if (error)
     {
         printf("Error: cudaMemcpy returns error\n");
