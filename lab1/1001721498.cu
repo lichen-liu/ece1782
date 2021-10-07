@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
     float *h_dZ = NULL;
     error = error || cudaHostAlloc((void **)&h_X, numBytes, 0);
     error = error || cudaHostAlloc((void **)&h_Y, numBytes, 0);
-    error = error || cudaHostAlloc((void **)&h_dZ, numBytes, cudaHostAllocWriteCombined);
+    error = error || cudaHostAlloc((void **)&h_dZ, numBytes, 0); // cudaHostAllocWriteCombined);
     if (error)
     {
         printf("Error: cudaHostAlloc returns error\n");
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
     /* Run Kernel */
     double timestampPreKernel = getTimeStamp();
     dim3 d_blockDim;
-    d_blockDim.x = 8;
+    d_blockDim.x = 32;
     d_blockDim.y = 32;
     dim3 d_gridDim;
     d_gridDim.x = (numCols + 1) / d_blockDim.x;
