@@ -102,48 +102,48 @@ __global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols,
         return;
 
     /* Set Up s_XT */
-    int s_XTX = threadIdx.y + 1;
-    int s_XTY = threadIdx.x;
-    int s_XTIdx = s_XTY * s_XTWidth + s_XTX;
+    int s_XT_x = threadIdx.y + 1;
+    int s_XT_y = threadIdx.x;
+    int s_XT_idx = s_XT_y * s_XTWidth + s_XT_x;
     if (globalY == 0)
     {
-        sX[s_XTIdx - 1] = 0;
+        s_XT[s_XT_idx - 1] = 0;
     }
     else if (threadIdx.y == 0)
     {
-        sX[s_XTIdx - 1] = X[globalIdx - numCols];
+        s_XT[s_XT_idx - 1] = X[globalIdx - numCols];
     }
     if (globalY == numRows - 1)
     {
-        sX[s_XTIdx + 1] = 0;
+        s_XT[s_XT_idx + 1] = 0;
     }
     else if (threadIdx.y == blockDim.y - 1)
     {
-        sX[s_XTIdx + 1] = X[globalIdx + numCols];
+        s_XT[s_XT_idx + 1] = X[globalIdx + numCols];
     }
-    s_XT[s_XTIdx] = X[globalIdx];
+    s_XT[s_XT_idx] = X[globalIdx];
 
     /* Set Up s_Y */
-    int s_YX = threadIdx.x + 2;
-    int s_YY = threadIdx.y;
-    int s_YIdx = s_YY * (blockDim.x + 2) + s_YX;
+    int s_Y_x = threadIdx.x + 2;
+    int s_Y_y = threadIdx.y;
+    int s_Y_idx = s_Y_y * (blockDim.x + 2) + s_Y_x;
     if (globalX == 0)
     {
-        s_Y[s_YIdx - 2] = 0;
-        s_Y[s_YIdx - 1] = 0;
+        s_Y[s_Y_idx - 2] = 0;
+        s_Y[s_Y_idx - 1] = 0;
     }
     else if (threadIdx.x == 0)
     {
-        s_Y[s_YIdx - 2] = Y[globalIdx - 2];
-        s_Y[s_YIdx - 1] = Y[globalIdx - 1];
+        s_Y[s_Y_idx - 2] = Y[globalIdx - 2];
+        s_Y[s_Y_idx - 1] = Y[globalIdx - 1];
     }
-    s_Y[s_YIdx] = Y[globalIdx];
+    s_Y[s_Y_idx] = Y[globalIdx];
 
     /* Wait for All to Set Up s_XT and s_Y */
     __syncthreads();
 
     /* Write Output */
-    Z[globalIdx] = sX[s_XTIdx - 1] + s_XT[s_XTIdx] + sX[s_XTIdx + 1] + s_Y[s_YIdx - 2] + s_Y[s_YIdx - 1] + s_Y[s_YIdx];
+    Z[globalIdx] = sX[s_XT_idx - 1] + s_XT[s_XT_idx] + sX[s_XT_idx + 1] + s_Y[s_Y_idx - 2] + s_Y[s_Y_idx - 1] + s_Y[s_Y_idx];
 }
 
 int main(int argc, char *argv[])
