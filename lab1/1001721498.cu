@@ -254,6 +254,9 @@ int main(int argc, char *argv[])
     /* Clean Up Device Resource */
     cudaDeviceReset();
 
+    printf("save my ass");
+    h_dZ[0];
+    printf("kiss my ass");
     /* Verify Device Result with Host Result */
     error = error || !checkZ(h_hZ, h_dZ, numRows, numCols);
 
