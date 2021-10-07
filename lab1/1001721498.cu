@@ -5,8 +5,6 @@
 // Comment out this line to enable debug mode
 // #define NDEBUG
 
-#define H_INDEX(i, j) (i) * numCols + (j)
-
 /* time stamp function in seconds */
 __host__ double getTimeStamp()
 {
@@ -15,28 +13,62 @@ __host__ double getTimeStamp()
     return (double)tv.tv_usec / 1000000 + tv.tv_sec;
 }
 
-__host__ void initX(float *X, int numRows, int numCols)
+__host__ void initX_old(float *X, int numRows, int numCols)
 {
     for (int i = 0; i < numRows; i++)
     {
         int ibase = i * numCols;
         for (int j = 0; j < numCols; j++)
         {
-            // h_X[i,j] = (float) (i+j)/2.0;
+            // h_X_old[i,j] = (float) (i+j)/2.0;
             X[ibase + j] = (float)(i + j) / 2.0;
         }
     }
 }
 
-__host__ void initY(float *Y, int numRows, int numCols)
+__host__ void initY_old(float *Y, int numRows, int numCols)
 {
     for (int i = 0; i < numRows; i++)
     {
         int ibase = i * numCols;
         for (int j = 0; j < numCols; j++)
         {
-            // h_Y[i,j] = (float) 3.25*(i+j);
+            // h_Y_old[i,j] = (float) 3.25*(i+j);
             Y[ibase + j] = (float)3.25 * (i + j);
+        }
+    }
+}
+
+__host__ void initX(float *X, int numRowsX, int numColsX)
+{
+    int lastIBase = (numRowsX - 1) * numColsX;
+    for (int j = 0; j < numColsX; j++)
+    {
+        X[j] = 0;
+        X[lastIBase + j] = 0;
+    }
+    for (int i = 1; i < numRowsX - 1; i++)
+    {
+        int iBase = i * numColsX;
+        for (int j = 0; j < numColsX; j++)
+        {
+            // h_X_old[i,j] = (float) (i+j)/2.0;
+            X[iBase + j] = (float)(i + j) / 2.0;
+        }
+    }
+}
+
+__host__ void initY(float *Y, int numRowsY, int numColsY)
+{
+    for (int i = 0; i < numRowsY; i++)
+    {
+        int iBase = i * numColsY;
+        Y[iBase] = 0;
+        Y[iBase + 1] = 0;
+        for (int j = 2; j < numColsY; j++)
+        {
+            // h_Y_old[i,j] = (float) 3.25*(i+j);
+            Y[iBase + j] = (float)3.25 * (i + j);
         }
     }
 }
@@ -50,7 +82,7 @@ __host__ float f_siggen_reference_get(float *M, int i, int j, int numRows, int n
     return M[i * numCols + j];
 }
 
-__host__ void f_siggen_reference(float *X, float *Y, float *Z, int numRows, int numCols)
+__host__ void f_siggen_reference_old(float *X, float *Y, float *Z, int numRows, int numCols)
 {
     for (int i = 0; i < numRows; i++)
     {
@@ -65,6 +97,29 @@ __host__ void f_siggen_reference(float *X, float *Y, float *Z, int numRows, int 
                 f_siggen_reference_get(Y, i, j - 2, numRows, numCols) -
                 f_siggen_reference_get(Y, i, j - 1, numRows, numCols) -
                 f_siggen_reference_get(Y, i, j, numRows, numCols);
+        }
+    }
+}
+
+#define H_ADJ_INDEX_X(i, j) ((i) + 1) * numCols + (j)
+#define H_ADJ_INDEX_Y(i, j) (i) * (numCols + 2) + (j) + 2
+#define H_INDEX(i, j) (i) * numCols + (j)
+
+__host__ void f_siggen_reference(float *X, float *Y, float *Z, int numRows, int numCols)
+{
+    for (int i = 0; i < numRows; i++)
+    {
+        int iBase = i * numCols;
+        for (int j = 0; j < numCols; j++)
+        {
+            // Z[i,j] = X[i-1,j] + X[i,j] + X[i+1,j] – Y[i,j-2] – Y[i,j-1] – Y[i,j]
+            Z[H_INDEX(i, j)] =
+                X[H_ADJ_INDEX_X(i - 1, j)] +
+                X[H_ADJ_INDEX_X(i, j)] +
+                X[H_ADJ_INDEX_X(i + 1, j)] -
+                Y[H_ADJ_INDEX_Y(i, j - 2)] -
+                Y[H_ADJ_INDEX_Y(i, j - 1)] -
+                Y[H_ADJ_INDEX_Y(i, j)];
         }
     }
 }
@@ -160,17 +215,38 @@ int main(int argc, char *argv[])
     size_t numElem = numRows * numCols;
     size_t numBytes = numElem * sizeof(float);
 
+    int numRowsX = numRows + 2;
+    int numColsX = numCols;
+    size_t numElemX = numRowsX * numColsX;
+    size_t numBytesX = numElemX * sizeof(float);
+
+    int numRowsY = numRows;
+    int numColsY = numCols + 2;
+    size_t numElemY = numRowsY * numColsY;
+    size_t numBytesY = numElemY * sizeof(float);
+
 #ifndef NDEBUG
     printf("numRows=%d, numCols=%d, numElem=%ld, numBytes=%ld\n", numRows, numCols, numElem, numBytes);
+    printf("numRowsX=%d, numColsX=%d, numElemX=%ld, numBytesX=%ld\n", numRowsX, numColsX, numElemX, numBytesX);
+    printf("numRowsY=%d, numColsY=%d, numElemY=%ld, numBytesY=%ld\n", numRowsY, numColsY, numElemY, numBytesY);
 #endif
 
     /* Allocate Host Memory */
+    // old
+    float *h_X_old = NULL;
+    float *h_Y_old = NULL;
+    float *h_hZ_old = (float *)malloc(numBytes);
+    float *h_dZ_old = NULL;
+    error = error || cudaHostAlloc((void **)&h_X_old, numBytes, 0);
+    error = error || cudaHostAlloc((void **)&h_Y_old, numBytes, 0);
+    error = error || cudaHostAlloc((void **)&h_dZ_old, numBytes, 0);
+    // new
     float *h_X = NULL;
     float *h_Y = NULL;
     float *h_hZ = (float *)malloc(numBytes);
     float *h_dZ = NULL;
-    error = error || cudaHostAlloc((void **)&h_X, numBytes, 0);
-    error = error || cudaHostAlloc((void **)&h_Y, numBytes, 0);
+    error = error || cudaHostAlloc((void **)&h_X, numBytesX, 0);
+    error = error || cudaHostAlloc((void **)&h_Y, numBytesY, 0);
     error = error || cudaHostAlloc((void **)&h_dZ, numBytes, 0);
     if (error)
     {
@@ -179,11 +255,16 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize Host Memory */
-    initX(h_X, numRows, numCols);
-    initY(h_Y, numRows, numCols);
+    // old
+    initX_old(h_X_old, numRows, numCols);
+    initY_old(h_Y_old, numRows, numCols);
+    // new
+    initX(h_X, numRowsX, numColsX);
+    initY(h_Y, numRowsY, numColsY);
 #ifndef NDEBUG
     double timestampPreCpuKernel = getTimeStamp();
 #endif
+    f_siggen_reference_old(h_X_old, h_Y_old, h_hZ_old, numRows, numCols);
     f_siggen_reference(h_X, h_Y, h_hZ, numRows, numCols);
 #ifndef NDEBUG
     double timestampPostCpuKernel = getTimeStamp();
@@ -205,8 +286,8 @@ int main(int argc, char *argv[])
 
     /* Copy Host Memory to Device Memory */
     double timestampPreCpuGpuTransfer = getTimeStamp();
-    error = error || cudaMemcpy(d_X, h_X, numBytes, cudaMemcpyHostToDevice);
-    error = error || cudaMemcpy(d_Y, h_Y, numBytes, cudaMemcpyHostToDevice);
+    error = error || cudaMemcpy(d_X, h_X_old, numBytes, cudaMemcpyHostToDevice);
+    error = error || cudaMemcpy(d_Y, h_Y_old, numBytes, cudaMemcpyHostToDevice);
     if (error)
     {
         printf("Error: cudaMemcpy returns error\n");
@@ -229,7 +310,7 @@ int main(int argc, char *argv[])
 
     /* Copy Device Memory to Host Memory */
     double timestampPreGpuCpuTransfer = getTimeStamp();
-    error = error || cudaMemcpy(h_dZ, d_Z, numBytes, cudaMemcpyDeviceToHost);
+    error = error || cudaMemcpy(h_dZ_old, d_Z, numBytes, cudaMemcpyDeviceToHost);
     if (error)
     {
         printf("Error: cudaMemcpy returns error\n");
@@ -246,7 +327,8 @@ int main(int argc, char *argv[])
     d_X = NULL;
 
     /* Verify Device Result with Host Result */
-    error = error || !checkZ(h_hZ, h_dZ, numRows, numCols);
+    // error = error || !checkZ(h_hZ_old, h_dZ_old, numRows, numCols);
+    error = error || !checkZ(h_hZ_old, h_hZ, numRows, numCols);
 
     /* Output */
 #ifndef NDEBUG
@@ -264,7 +346,7 @@ int main(int argc, char *argv[])
         float gpuCpuTransferElapsed = timestampPostGpuCpuTransfer - timestampPreGpuCpuTransfer;
         int zValueI = 5;
         int zValueJ = 5;
-        float zValue = h_dZ[H_INDEX(zValueI, zValueJ)];
+        float zValue = h_dZ_old[H_INDEX(zValueI, zValueJ)];
         printf("%.6f %.6f %.6f %.6f %.6f\n", totalGpuElapased, cpuGpuTransferElapsed, kernelElapsed, gpuCpuTransferElapsed, zValue);
     }
     else
@@ -275,21 +357,21 @@ int main(int argc, char *argv[])
         {
             for (int j = 0; j < 4; j++)
             {
-                printf("(i=%d, j=%d), CPU=%.6f, GPU=%.6f, X=%.6f, Y=%.6f\n", i, j, h_hZ[H_INDEX(i, j)], h_dZ[H_INDEX(i, j)], h_X[H_INDEX(i, j)], h_Y[H_INDEX(i, j)]);
+                printf("(i=%d, j=%d), CPU=%.6f, GPU=%.6f, X=%.6f, Y=%.6f\n", i, j, h_hZ_old[H_INDEX(i, j)], h_dZ_old[H_INDEX(i, j)], h_X_old[H_INDEX(i, j)], h_Y_old[H_INDEX(i, j)]);
             }
         }
 #endif
     }
 
     /* Free Host Memory */
-    cudaFreeHost(h_dZ);
-    h_dZ = NULL;
-    free(h_hZ);
-    h_hZ = NULL;
-    cudaFreeHost(h_Y);
-    h_Y = NULL;
-    cudaFreeHost(h_X);
-    h_X = NULL;
+    cudaFreeHost(h_dZ_old);
+    h_dZ_old = NULL;
+    free(h_hZ_old);
+    h_hZ_old = NULL;
+    cudaFreeHost(h_Y_old);
+    h_Y_old = NULL;
+    cudaFreeHost(h_X_old);
+    h_X_old = NULL;
 
     /* Clean Up Device Resource */
     cudaDeviceReset();
