@@ -168,15 +168,15 @@ int main(int argc, char *argv[])
     // float *h_X = (float *)malloc(numBytes);
     // float *h_Y = (float *)malloc(numBytes);
     // float *h_hZ = (float *)malloc(numBytes);
-    float *h_dZ = (float *)malloc(numBytes);
+    // float *h_dZ = (float *)malloc(numBytes);
     // TODO:
     float *h_X = NULL;
     float *h_Y = NULL;
     float *h_hZ = (float *)malloc(numBytes);
-    //float *h_dZ = NULL;
+    float *h_dZ = NULL;
     error = error || cudaHostAlloc((void **)&h_X, numBytes, 0);
     error = error || cudaHostAlloc((void **)&h_Y, numBytes, 0);
-    //error = error || cudaHostAlloc((void **)&h_dZ, numBytes, cudaHostAllocWriteCombined);
+    error = error || cudaHostAlloc((void **)&h_dZ, numBytes, 0); //cudaHostAllocWriteCombined);
     if (error)
     {
         printf("Error: cudaHostAlloc returns error\n");
@@ -290,8 +290,8 @@ int main(int argc, char *argv[])
     }
 
     /* Free Host Memory */
-    free(h_dZ);
-    h_dZ = NULL;
+    // free(h_dZ);
+    // h_dZ = NULL;
     // free(h_hZ);
     // h_hZ = NULL;
     // free(h_Y);
@@ -299,8 +299,8 @@ int main(int argc, char *argv[])
     // free(h_X);
     // h_X = NULL;
     // TODO:
-    // cudaFreeHost(h_dZ);
-    // h_dZ = NULL;
+    cudaFreeHost(h_dZ);
+    h_dZ = NULL;
     free(h_hZ);
     h_hZ = NULL;
     cudaFreeHost(h_Y);
