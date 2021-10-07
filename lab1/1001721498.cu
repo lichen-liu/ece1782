@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
+#include <s_Ys/time.h>
 
 // Comment out this line to enable debug mode
 // #define NDEBUG
@@ -85,15 +85,65 @@ __host__ int checkZ(float *E, float *A, int numRows, int numCols)
     return 1;
 }
 
-__global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols)
+__global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols, int smemNumElemX)
 {
+    extern __shared__ float s_data[];
+    float *s_XT = s_data; // blockDim.x * (blockDim.y + 2);
+    int s_XTWidth = (blockDim.y + 2);
+    int s_XTHeight = blockDim.x;
+    float *s_Y = s_XT + smemNumElemX; // (blockDim.x + 2) * blockDim.y;
+
+    /* Global Coordinate */
     int globalX = blockDim.x * blockIdx.x + threadIdx.x;
     int globalY = blockDim.y * blockIdx.y + threadIdx.y;
+    int globalIdx = globalY * numCols + globalX;
 
     if (globalX >= numCols || globalY >= numRows)
         return;
 
-    // WIP
+    /* Set Up s_XT */
+    int s_XTX = threadIdx.y + 1;
+    int s_XTY = threadIdx.x;
+    int s_XTIdx = s_XTY * s_XTWidth + s_XTX;
+    if (globalY == 0)
+    {
+        sX[s_XTIdx - 1] = 0;
+    }
+    else if (threadIdx.y == 0)
+    {
+        sX[s_XTIdx - 1] = X[globalIdx - numCols];
+    }
+    if (globalY == numRows - 1)
+    {
+        sX[s_XTIdx + 1] = 0;
+    }
+    else if (threadIdx.y == blockDim.y - 1)
+    {
+        sX[s_XTIdx + 1] = X[globalIdx + numCols];
+    }
+    s_XT[s_XTIdx] = X[globalIdx];
+
+    /* Set Up s_Y */
+    int s_YX = threadIdx.x + 2;
+    int s_YY = threadIdx.y;
+    int s_YIdx = s_YY * (blockDim.x + 2) + s_YX;
+    if (globalX == 0)
+    {
+        s_Y[s_YIdx - 2] = 0;
+        s_Y[s_YIdx - 1] = 0;
+    }
+    else if (threadIdx.x == 0)
+    {
+        s_Y[s_YIdx - 2] = Y[globalIdx - 2];
+        s_Y[s_YIdx - 1] = Y[globalIdx - 1];
+    }
+    s_Y[s_YIdx] = Y[globalIdx];
+
+    /* Wait for All to Set Up s_XT and s_Y */
+    __syncthreads();
+
+    /* Write Output */
+    Z[globalIdx] = sX[s_XTIdx - 1] + s_XT[s_XTIdx] + sX[s_XTIdx + 1] + s_Y[s_YIdx - 2] + s_Y[s_YIdx - 1] + s_Y[s_YIdx];
 }
 
 int main(int argc, char *argv[])
@@ -154,11 +204,17 @@ int main(int argc, char *argv[])
 
     /* Run Kernel */
     double timestampPreKernel = getTimeStamp();
-    dim3 gridDim;
-    dim3 blockDim;
-    size_t d_sizeSmem = 0;
-    f_siggen<<<gridDim, blockDim, d_sizeSmem>>>(d_X, d_Y, d_Z, numRows, numCols); // WIP
-    cudaDeviceSynchronize();
+    dim3 d_blockDim;
+    d_blockDim.x = 32;
+    d_blockDim.y = 32;
+    dim3 d_gridDim;
+    d_gridDim.x = (numCols + 1) / d_blockDim.x;
+    d_gridDim.y = (numRows + 1) / d_blockDim.y;
+    int d_smemNumElemX = d_blockDim.x * (d_blockDim.y + 2);
+    int d_smemNumElemY = (d_blockDim.x + 2) * d_blockDim.y;
+    size_t d_smemNumBytes = (d_smemNumElemX + d_smemNumElemY) * sizeof(float);
+    f_siggen<<<d_gridDim, d_blockDim, d_smemNumBytes>>>(d_X, d_Y, d_Z, numRows, numCols, d_smemNumElemX);
+    cudaDevices_synchronize();
 
     /* Copy Device Memory to Host Memory */
     double timestampPreGpuCpuTransfer = getTimeStamp();
@@ -180,6 +236,10 @@ int main(int argc, char *argv[])
     int isMatching = checkZ(h_hZ, h_dZ, numRows, numCols);
 
     /* Output */
+#ifndef NDEBUG
+    printf("d_gridDim=(%d, %d), d_blockDim=(%d, %d)\n", d_gridDim.x, d_gridDim.y, d_blockDim.x, d_blockDim.y);
+#endif
+
     if (isMatching)
     {
 #ifndef NDEBUG
