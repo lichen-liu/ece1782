@@ -109,7 +109,6 @@ __host__ void f_siggen_reference(float *X, float *Y, float *Z, int numRows, int 
 {
     for (int i = 0; i < numRows; i++)
     {
-        int iBase = i * numCols;
         for (int j = 0; j < numCols; j++)
         {
             // Z[i,j] = X[i-1,j] + X[i,j] + X[i+1,j] – Y[i,j-2] – Y[i,j-1] – Y[i,j]
@@ -354,11 +353,18 @@ int main(int argc, char *argv[])
     {
         printf("Error: GPU result does not with CPU result\n");
 #ifndef NDEBUG
+        // for (int i = 0; i < 4; i++)
+        // {
+        //     for (int j = 0; j < 4; j++)
+        //     {
+        //         printf("(i=%d, j=%d), CPU=%.6f, GPU=%.6f, X=%.6f, Y=%.6f\n", i, j, h_hZ_old[H_INDEX(i, j)], h_dZ_old[H_INDEX(i, j)], h_X_old[H_INDEX(i, j)], h_Y_old[H_INDEX(i, j)]);
+        //     }
+        // }
         for (int i = 0; i < 4; i++)
         {
             for (int j = 0; j < 4; j++)
             {
-                printf("(i=%d, j=%d), CPU=%.6f, GPU=%.6f, X=%.6f, Y=%.6f\n", i, j, h_hZ_old[H_INDEX(i, j)], h_dZ_old[H_INDEX(i, j)], h_X_old[H_INDEX(i, j)], h_Y_old[H_INDEX(i, j)]);
+                printf("(i=%d, j=%d), CPU=%.6f, CPU_V2=%.6f, X=%.6f, Y=%.6f\n", i, j, h_hZ_old[H_INDEX(i, j)], h_hZ[H_INDEX(i, j)], h_X_old[H_INDEX(i, j)], h_Y_old[H_INDEX(i, j)]);
             }
         }
 #endif
