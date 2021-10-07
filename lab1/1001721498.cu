@@ -39,18 +39,18 @@ __host__ void initY_old(float *Y, int numRows, int numCols)
     }
 }
 
-__host__ void initX(float *X, int numRowsX, int numColsX)
+__host__ void initX(float *X, int numRows, int numCols)
 {
-    int lastIBase = (numRowsX - 1) * numColsX;
-    for (int j = 0; j < numColsX; j++)
+    int lastIBase = (numRows - 1) * numCols;
+    for (int j = 0; j < numCols; j++)
     {
         X[j] = 0;
         X[lastIBase + j] = 0;
     }
-    for (int i = 0; i < numRowsX - 2; i++)
+    for (int i = 0; i < numRows; i++)
     {
-        int iBase = (i + 1) * numColsX;
-        for (int j = 0; j < numColsX; j++)
+        int iBase = (i + 1) * numCols;
+        for (int j = 0; j < numCols; j++)
         {
             // h_X_old[i,j] = (float) (i+j)/2.0;
             X[iBase + j] = (float)(i + j) / 2.0;
@@ -58,14 +58,14 @@ __host__ void initX(float *X, int numRowsX, int numColsX)
     }
 }
 
-__host__ void initY(float *Y, int numRowsY, int numColsY)
+__host__ void initY(float *Y, int numRows, int numCols)
 {
-    for (int i = 0; i < numRowsY; i++)
+    for (int i = 0; i < numRows; i++)
     {
-        int iBase = i * numColsY;
+        int iBase = i * numCols;
         Y[iBase] = 0;
         Y[iBase + 1] = 0;
-        for (int j = 0; j < numColsY - 2; j++)
+        for (int j = 0; j < numCols; j++)
         {
             // h_Y_old[i,j] = (float) 3.25*(i+j);
             Y[iBase + j + 2] = (float)3.25 * (i + j);
@@ -259,8 +259,8 @@ int main(int argc, char *argv[])
     initX_old(h_X_old, numRows, numCols);
     initY_old(h_Y_old, numRows, numCols);
     // new
-    initX(h_X, numRowsX, numColsX);
-    initY(h_Y, numRowsY, numColsY);
+    initX(h_X, numRows, numCols);
+    initY(h_Y, numRows, numCols);
 #ifndef NDEBUG
     double timestampPreCpuKernel = getTimeStamp();
 #endif
