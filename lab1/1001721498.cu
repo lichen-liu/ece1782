@@ -13,32 +13,6 @@ __host__ double getTimeStamp()
     return (double)tv.tv_usec / 1000000 + tv.tv_sec;
 }
 
-__host__ void initX_old(float *X, int numRows, int numCols)
-{
-    for (int i = 0; i < numRows; i++)
-    {
-        int ibase = i * numCols;
-        for (int j = 0; j < numCols; j++)
-        {
-            // h_X_old[i,j] = (float) (i+j)/2.0;
-            X[ibase + j] = (float)(i + j) / 2.0;
-        }
-    }
-}
-
-__host__ void initY_old(float *Y, int numRows, int numCols)
-{
-    for (int i = 0; i < numRows; i++)
-    {
-        int ibase = i * numCols;
-        for (int j = 0; j < numCols; j++)
-        {
-            // h_Y_old[i,j] = (float) 3.25*(i+j);
-            Y[ibase + j] = (float)3.25 * (i + j);
-        }
-    }
-}
-
 __host__ void initX(float *X, int numRows, int numCols)
 {
     int lastIBase = (numRows + 1) * numCols;
@@ -124,53 +98,43 @@ __global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols,
     int globalX = blockDim.x * blockIdx.x + threadIdx.x;
     int globalY = blockDim.y * blockIdx.y + threadIdx.y;
     int globalIdx = globalY * numCols + globalX;
+    int globalXIdx = (globalY + 1) * numCols + globalX;
+    int globalYIdx = globalY * (numCols + 2) + globalX + 2;
 
     if (globalX >= numCols || globalY >= numRows)
         return;
 
     /* Set Up s_XT */
-    int s_XT_x = threadIdx.y + 1;
-    int s_XT_y = threadIdx.x;
-    int s_XT_idx = s_XT_y * s_XTWidth + s_XT_x;
-    if (globalY == 0)
+    int s_XTx = threadIdx.y + 1;
+    int s_XTy = threadIdx.x;
+    int s_XTIdx = s_XTy * s_XTWidth + s_XTx;
+    if (threadIdx.y == 0)
     {
-        s_XT[s_XT_idx - 1] = 0;
+        s_XT[s_XTIdx - 1] = X[globalXIdx - numCols];
     }
-    else if (threadIdx.y == 0)
+
+    if (threadIdx.y == blockDim.y - 1 || globalY == numRows - 1)
     {
-        s_XT[s_XT_idx - 1] = X[globalIdx - numCols];
+        s_XT[s_XTIdx + 1] = X[globalXIdx + numCols];
     }
-    if (globalY == numRows - 1)
-    {
-        s_XT[s_XT_idx + 1] = 0;
-    }
-    else if (threadIdx.y == blockDim.y - 1)
-    {
-        s_XT[s_XT_idx + 1] = X[globalIdx + numCols];
-    }
-    s_XT[s_XT_idx] = X[globalIdx];
+    s_XT[s_XTIdx] = X[globalXIdx];
 
     /* Set Up s_Y */
-    int s_Y_x = threadIdx.x + 2;
-    int s_Y_y = threadIdx.y;
-    int s_Y_idx = s_Y_y * (blockDim.x + 2) + s_Y_x;
-    if (globalX == 0)
+    int s_Yx = threadIdx.x + 2;
+    int s_Yy = threadIdx.y;
+    int s_YIdx = s_Yy * (blockDim.x + 2) + s_Yx;
+    if (threadIdx.x == 0)
     {
-        s_Y[s_Y_idx - 2] = 0;
-        s_Y[s_Y_idx - 1] = 0;
+        s_Y[s_YIdx - 2] = Y[globalYIdx - 2];
+        s_Y[s_YIdx - 1] = Y[globalYIdx - 1];
     }
-    else if (threadIdx.x == 0)
-    {
-        s_Y[s_Y_idx - 2] = Y[globalIdx - 2];
-        s_Y[s_Y_idx - 1] = Y[globalIdx - 1];
-    }
-    s_Y[s_Y_idx] = Y[globalIdx];
+    s_Y[s_YIdx] = Y[globalYIdx];
 
     /* Wait for All to Set Up s_XT and s_Y */
     __syncthreads();
 
     /* Write Output */
-    Z[globalIdx] = s_XT[s_XT_idx - 1] + s_XT[s_XT_idx] + s_XT[s_XT_idx + 1] - s_Y[s_Y_idx - 2] - s_Y[s_Y_idx - 1] - s_Y[s_Y_idx];
+    Z[globalIdx] = s_XT[s_XTIdx - 1] + s_XT[s_XTIdx] + s_XT[s_XTIdx + 1] - s_Y[s_YIdx - 2] - s_Y[s_YIdx - 1] - s_Y[s_YIdx];
 }
 
 int main(int argc, char *argv[])
@@ -204,14 +168,6 @@ int main(int argc, char *argv[])
 #endif
 
     /* Allocate Host Memory */
-    // old
-    float *h_X_old = NULL;
-    float *h_Y_old = NULL;
-    float *h_dZ_old = NULL;
-    error = error || cudaHostAlloc((void **)&h_X_old, numBytes, 0);
-    error = error || cudaHostAlloc((void **)&h_Y_old, numBytes, 0);
-    error = error || cudaHostAlloc((void **)&h_dZ_old, numBytes, 0);
-    // new
     float *h_X = NULL;
     float *h_Y = NULL;
     float *h_hZ = (float *)malloc(numBytes);
@@ -226,10 +182,6 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize Host Memory */
-    // old
-    initX_old(h_X_old, numRows, numCols);
-    initY_old(h_Y_old, numRows, numCols);
-    // new
     initX(h_X, numRows, numCols);
     initY(h_Y, numRows, numCols);
 #ifndef NDEBUG
@@ -256,8 +208,8 @@ int main(int argc, char *argv[])
 
     /* Copy Host Memory to Device Memory */
     double timestampPreCpuGpuTransfer = getTimeStamp();
-    error = error || cudaMemcpy(d_X, h_X_old, numBytes, cudaMemcpyHostToDevice);
-    error = error || cudaMemcpy(d_Y, h_Y_old, numBytes, cudaMemcpyHostToDevice);
+    error = error || cudaMemcpy(d_X, h_X, numBytes, cudaMemcpyHostToDevice);
+    error = error || cudaMemcpy(d_Y, h_Y, numBytes, cudaMemcpyHostToDevice);
     if (error)
     {
         printf("Error: cudaMemcpy returns error\n");
@@ -315,7 +267,7 @@ int main(int argc, char *argv[])
         float gpuCpuTransferElapsed = timestampPostGpuCpuTransfer - timestampPreGpuCpuTransfer;
         int zValueI = 5;
         int zValueJ = 5;
-        float zValue = h_dZ_old[H_INDEX(zValueI, zValueJ)];
+        float zValue = h_dZ[H_INDEX(zValueI, zValueJ)];
         printf("%.6f %.6f %.6f %.6f %.6f\n", totalGpuElapased, cpuGpuTransferElapsed, kernelElapsed, gpuCpuTransferElapsed, zValue);
     }
     else
@@ -326,21 +278,13 @@ int main(int argc, char *argv[])
         {
             for (int j = 0; j < 4; j++)
             {
-                printf("(i=%d, j=%d), CPU=%.6f, GPU=%.6f, X=%.6f, Y=%.6f\n", i, j, h_hZ[H_INDEX(i, j)], h_dZ_old[H_INDEX(i, j)], h_X_old[H_INDEX(i, j)], h_Y_old[H_INDEX(i, j)]);
+                printf("(i=%d, j=%d), CPU=%.6f, GPU=%.6f, X=%.6f, Y=%.6f\n", i, j, h_hZ[H_INDEX(i, j)], h_dZ[H_INDEX(i, j)], h_X[H_ADJ_INDEX_X(i, j)], h_Y[H_ADJ_INDEX_Y(i, j)]);
             }
         }
 #endif
     }
 
     /* Free Host Memory */
-    // old
-    cudaFreeHost(h_dZ_old);
-    h_dZ_old = NULL;
-    cudaFreeHost(h_Y_old);
-    h_Y_old = NULL;
-    cudaFreeHost(h_X_old);
-    h_X_old = NULL;
-    // new
     cudaFreeHost(h_dZ);
     h_dZ = NULL;
     free(h_hZ);
