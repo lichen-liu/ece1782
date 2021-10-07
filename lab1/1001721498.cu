@@ -101,9 +101,9 @@ __host__ void f_siggen_reference_old(float *X, float *Y, float *Z, int numRows, 
     }
 }
 
-#define H_ADJ_INDEX_X(i, j) ((i) + 1) * numCols + (j)
-#define H_ADJ_INDEX_Y(i, j) (i) * (numCols + 2) + (j) + 2
-#define H_INDEX(i, j) (i) * numCols + (j)
+#define H_ADJ_INDEX_X(i, j) (((i) + 1) * numCols + (j))
+#define H_ADJ_INDEX_Y(i, j) ((i) * (numCols + 2) + (j) + 2)
+#define H_INDEX(i, j) ((i) * numCols + (j))
 
 __host__ void f_siggen_reference(float *X, float *Y, float *Z, int numRows, int numCols)
 {
