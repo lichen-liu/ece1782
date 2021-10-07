@@ -3,6 +3,7 @@
 ## To Compile
 ```
 nvcc 1001721498.cu -o 1001721498
+nvcc 1001721498.cu -o 1001721498 -res-usage
 ```
 
 ## To Run
