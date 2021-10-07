@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
     float *h_dZ = NULL;
     error = error || cudaHostAlloc((void **)&h_X, numBytes, 0);
     error = error || cudaHostAlloc((void **)&h_Y, numBytes, 0);
-    error = error || cudaHostAlloc((void **)&h_dZ, numBytes, 0); // cudaHostAllocWriteCombined);
+    error = error || cudaHostAlloc((void **)&h_dZ, numBytes, cudaHostAllocWriteCombined);
     if (error)
     {
         printf("Error: cudaHostAlloc returns error\n");
