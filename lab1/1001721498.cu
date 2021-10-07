@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
 #ifndef NDEBUG
         for (int i = 0; i < 4; i++)
         {
-            for (j = 0; j < 4; j++)
+            for (int j = 0; j < 4; j++)
             {
                 printf("(i=%d, j=%d), CPU=%.6f, GPU=%.6f, X=%.6f, Y=%.6f\n", i, j, h_hZ[H_INDEX(i, j)], h_dZ[H_INDEX(i, j)], h_X[H_INDEX(i, j)], h_Y[H_INDEX(i, j)]);
             }
