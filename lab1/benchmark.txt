@@ -7,3 +7,7 @@ Pinned
 numRows=16384, numCols=16384, numElem=268435456, numBytes=1073741824
 d_gridDim=(512, 512), d_blockDim=(32, 32)
 0.293254 0.176341 0.030916 0.085997 -72.750000
+
+numRows=16384, numCols=16384, numElem=268435456, numBytes=1073741824
+d_gridDim=(1024, 256), d_blockDim=(16, 64)
+0.296278 0.179750 0.027408 0.089120 -72.750000

@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
     double timestampPreKernel = getTimeStamp();
     dim3 d_blockDim;
     d_blockDim.x = 16;
-    d_blockDim.y = 64;
+    d_blockDim.y = 32;
     dim3 d_gridDim;
     d_gridDim.x = (numCols + 1) / d_blockDim.x;
     d_gridDim.y = (numRows + 1) / d_blockDim.y;
