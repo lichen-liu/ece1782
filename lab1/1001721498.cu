@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <s_Ys/time.h>
+#include <sys/time.h>
 
 // Comment out this line to enable debug mode
 // #define NDEBUG
