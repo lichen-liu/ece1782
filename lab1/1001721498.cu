@@ -211,7 +211,7 @@ int main(int argc, char *argv[])
     error = error || cudaMemcpy(d_Y, h_Y, numBytesY, cudaMemcpyHostToDevice);
     if (error)
     {
-        printf("Error: cudaMemcpy returns error\n");
+        printf("Error: cudaMemcpy returns error %d\n", error);
         return 0;
     }
 
