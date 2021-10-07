@@ -148,7 +148,7 @@ __global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols,
 
 int main(int argc, char *argv[])
 {
-    int success = 1;
+    int error = 0;
     /* Get Dimension */
     if (argc != 3)
     {
@@ -174,10 +174,10 @@ int main(int argc, char *argv[])
     float *h_Y = NULL;
     float *h_hZ = (float *)malloc(numBytes);
     float *h_dZ = NULL;
-    success = success && cudaHostAlloc((void **)&h_X, numBytes, 0);
-    success = success && cudaHostAlloc((void **)&h_Y, numBytes, 0);
-    success = success && cudaHostAlloc((void **)&h_dZ, numBytes, cudaHostAllocWriteCombined);
-    if (!success)
+    error = error || cudaHostAlloc((void **)&h_X, numBytes, 0);
+    error = error || cudaHostAlloc((void **)&h_Y, numBytes, 0);
+    error = error || cudaHostAlloc((void **)&h_dZ, numBytes, cudaHostAllocWriteCombined);
+    if (error)
     {
         printf("Error: cudaHostAlloc returns error\n");
         return 0;
@@ -199,10 +199,10 @@ int main(int argc, char *argv[])
     float *d_X = NULL;
     float *d_Y = NULL;
     float *d_Z = NULL;
-    success = success && cudaMalloc((void **)&d_X, numBytes);
-    success = success && cudaMalloc((void **)&d_Y, numBytes);
-    success = success && cudaMalloc((void **)&d_Z, numBytes);
-    if (!success)
+    error = error || cudaMalloc((void **)&d_X, numBytes);
+    error = error || cudaMalloc((void **)&d_Y, numBytes);
+    error = error || cudaMalloc((void **)&d_Z, numBytes);
+    if (error)
     {
         printf("Error: cudaMalloc returns error\n");
         return 0;
@@ -210,9 +210,9 @@ int main(int argc, char *argv[])
 
     /* Copy Host Memory to Device Memory */
     double timestampPreCpuGpuTransfer = getTimeStamp();
-    success = success && cudaMemcpy(d_X, h_X, numBytes, cudaMemcpyHostToDevice);
-    success = success && cudaMemcpy(d_Y, h_Y, numBytes, cudaMemcpyHostToDevice);
-    if (!success)
+    error = error || cudaMemcpy(d_X, h_X, numBytes, cudaMemcpyHostToDevice);
+    error = error || cudaMemcpy(d_Y, h_Y, numBytes, cudaMemcpyHostToDevice);
+    if (error)
     {
         printf("Error: cudaMemcpy returns error\n");
         return 0;
@@ -234,8 +234,8 @@ int main(int argc, char *argv[])
 
     /* Copy Device Memory to Host Memory */
     double timestampPreGpuCpuTransfer = getTimeStamp();
-    success = success && cudaMemcpy(h_dZ, d_Z, numBytes, cudaMemcpyDeviceToHost);
-    if (!success)
+    error = error || cudaMemcpy(h_dZ, d_Z, numBytes, cudaMemcpyDeviceToHost);
+    if (error)
     {
         printf("Error: cudaMemcpy returns error\n");
         return 0;
@@ -254,14 +254,14 @@ int main(int argc, char *argv[])
     cudaDeviceReset();
 
     /* Verify Device Result with Host Result */
-    success = success && checkZ(h_hZ, h_dZ, numRows, numCols);
+    error = error || !checkZ(h_hZ, h_dZ, numRows, numCols);
 
     /* Output */
 #ifndef NDEBUG
     printf("d_gridDim=(%d, %d), d_blockDim=(%d, %d)\n", d_gridDim.x, d_gridDim.y, d_blockDim.x, d_blockDim.y);
 #endif
 
-    if (success)
+    if (!error)
     {
 #ifndef NDEBUG
         printf("<total_GPU_time> <CPU_GPU_transfer_time> <kernel_time> <GPU_CPU_transfer_time> <Z-value> <nl>\n");
