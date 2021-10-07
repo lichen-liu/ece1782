@@ -144,7 +144,7 @@ __global__ void f_siggen(float *X, float *Y, float *Z, int numRows, int numCols,
 
     /* Write Output */
     // Z[globalIdx] = s_XT[s_XT_idx - 1] + s_XT[s_XT_idx] + s_XT[s_XT_idx + 1] + s_Y[s_Y_idx - 2] + s_Y[s_Y_idx - 1] + s_Y[s_Y_idx];
-    Z[globalIdx] = s_XT[s_XT_idx - 1];
+    Z[globalIdx] = s_XT[s_XT_idx + 1];
 }
 
 int main(int argc, char *argv[])
