@@ -3,7 +3,7 @@
 #include <sys/time.h>
 
 // Comment out this line to enable debug mode
-// #define NDEBUG
+#define NDEBUG
 
 /* time stamp function in seconds */
 __host__ double getTimeStamp()
