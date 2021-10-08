@@ -78,7 +78,9 @@ __host__ int checkZ(float *E, float *A, int numRows, int numCols)
         {
             if (E[ibase + j] != A[ibase + j])
             {
+#ifndef NDEBUG
                 printf("(i=%d, j=%d) Expected=%f Actual=%f\n", i, j, E[ibase + j], A[ibase + j]);
+#endif
                 return 0;
             }
         }
