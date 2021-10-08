@@ -228,12 +228,7 @@ int main(int argc, char *argv[])
     int d_smemNumElemY = (d_blockDim.x + 2) * d_blockDim.y;
     size_t d_smemNumBytes = (d_smemNumElemX + d_smemNumElemY) * sizeof(float);
     f_siggen<<<d_gridDim, d_blockDim, d_smemNumBytes>>>(d_X, d_Y, d_Z, numRows, numCols, d_smemNumElemX);
-    error = error || cudaDeviceSynchronize();
-    if (error)
-    {
-        printf("Error: cudaDeviceSynchronize returns error %d\n", error);
-        return 0;
-    }
+    cudaDeviceSynchronize();
 
     /* Copy Device Memory to Host Memory */
     double timestampPreGpuCpuTransfer = getTimeStamp();
