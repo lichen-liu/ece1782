@@ -116,9 +116,10 @@ __global__ void jacobiRelaxation(float *A, float *B, int n)
 {
     extern __shared__ float s_data[];
     /* Global Coordinate */
-    int globalX = blockDim.x * blockIdx.x + threadIdx.x;
-    int globalY = blockDim.y * blockIdx.y + threadIdx.y;
-    int globalIdx = globalY * numCols + globalX;
+    int globalK = blockDim.x * blockIdx.x + threadIdx.x;
+    int globalJ = blockDim.y * blockIdx.y + threadIdx.y;
+    int globalI = blockDim.z * blockIdx.z + threadIdx.z;
+    int globalIdx = globalI * n * n + globalJ * n + globalK;
     __syncthreads();
 }
 
