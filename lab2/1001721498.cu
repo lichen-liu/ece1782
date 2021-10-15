@@ -13,7 +13,7 @@ __host__ long getTimeStamp()
     return (long)tv.tv_usec / 1000 + tv.tv_sec * 1000;
 }
 
-__host__ void initB(float *B, int n)
+__host__ void initB_old(float *B, int n)
 {
     for (int i = 0; i < n; i++)
     {
@@ -30,6 +30,30 @@ __host__ void initB(float *B, int n)
     }
 }
 
+__host__ void initB(float *B, int nB)
+{
+    for (int i = 0; i < nB; i++)
+    {
+        int iIndex = i * nB * nB;
+        for (int j = 0; j < nB; j++)
+        {
+            int ijIndex = iIndex + j * nB;
+            for (int k = 0; k < nB; k++)
+            {
+                int ijkIndex = ijIndex + k;
+                if (i == 0 || j == 0 || k == 0)
+                {
+                    B[ijkIndex] = 0;
+                }
+                else
+                {
+                    B[ijkIndex] = ((i - 1 + j - 1 + k - 1) % 10) * (float)1.1;
+                }
+            }
+        }
+    }
+}
+
 __device__ float d_getB(float *B, int n, int i, int j, int k)
 {
     if (i < 0 || i >= n || j < 0 || j >= n || k < 0 || k >= n)
@@ -40,18 +64,11 @@ __device__ float d_getB(float *B, int n, int i, int j, int k)
     return B[i * n * n + j * n + k];
 }
 
-__host__ float getB(float *B, int n, int i, int j, int k)
-{
-    if (i < 0 || i >= n || j < 0 || j >= n || k < 0 || k >= n)
-    {
-        return 0;
-    }
-
-    return B[i * n * n + j * n + k];
-}
+#define h_getB(B, nB, i, j, k) B[((i) + 1) * nB * nB + ((j) + 1) * nB + ((k) + 1)]
 
 __host__ void jacobiRelaxationReference(float *A, float *B, int n)
 {
+    int nB = n + 1;
     for (int i = 0; i < n; i++)
     {
         int iIndex = i * n * n;
@@ -67,12 +84,12 @@ __host__ void jacobiRelaxationReference(float *A, float *B, int n)
                 }
                 else
                 {
-                    A[ijkIndex] = (float)0.8 * (getB(B, n, i - 1, j, k) +
-                                                getB(B, n, i + 1, j, k) +
-                                                getB(B, n, i, j - 1, k) +
-                                                getB(B, n, i, j + 1, k) +
-                                                getB(B, n, i, j, k - 1) +
-                                                getB(B, n, i, j, k + 1));
+                    A[ijkIndex] = (float)0.8 * (h_getB(B, nB, i - 1, j, k) +
+                                                h_getB(B, nB, i + 1, j, k) +
+                                                h_getB(B, nB, i, j - 1, k) +
+                                                h_getB(B, nB, i, j + 1, k) +
+                                                h_getB(B, nB, i, j, k - 1) +
+                                                h_getB(B, nB, i, j, k + 1));
                 }
             }
         }
@@ -164,13 +181,20 @@ int main(int argc, char *argv[])
     size_t numElem = n * n * n;
     size_t numBytes = numElem * sizeof(float);
 
+    int nB = n + 1;
+    size_t numElemB = nB * nB * nB;
+    size_t numBytesB = numElemB * sizeof(float);
+
 #ifndef NDEBUG
     printf("n=%d, numElem=%ld, numBytes=%ld\n", n, numElem, numBytes);
+    printf("nB=%d, numElemB=%ld, numBytesB=%ld\n", nB, numElemB, numBytesB);
 #endif
 
     /* Allocate Host Memory */
+    float *h_B_old = NULL;
+    error = error || cudaHostAlloc((void **)&h_B_old, numBytes, 0);
     float *h_B = NULL;
-    error = error || cudaHostAlloc((void **)&h_B, numBytes, 0);
+    error = error || cudaHostAlloc((void **)&h_B, numBytesB, 0);
     float *h_hA = (float *)malloc(numBytes);
     float *h_dA = NULL;
     error = error || cudaHostAlloc((void **)&h_dA, numBytes, 0);
@@ -181,7 +205,8 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize Host Memory */
-    initB(h_B, n);
+    initB_old(h_B_old, n);
+    initB(h_B, nB);
 #ifndef NDEBUG
     long timestampPreCpuKernel = getTimeStamp();
 #endif
@@ -204,7 +229,7 @@ int main(int argc, char *argv[])
 
     /* Copy Host Memory to Device Memory */
     long timestampPreCpuGpuTransfer = getTimeStamp();
-    error = error || cudaMemcpy(d_B, h_B, numBytes, cudaMemcpyHostToDevice);
+    error = error || cudaMemcpy(d_B, h_B_old, numBytes, cudaMemcpyHostToDevice);
     if (error)
     {
         printf("Error: cudaMemcpy returns error\n");
@@ -276,6 +301,8 @@ int main(int argc, char *argv[])
     h_hA = NULL;
     cudaFreeHost(h_B);
     h_B = NULL;
+    cudaFreeHost(h_B_old);
+    h_B_old = NULL;
 
     /* Clean Up Device Resource */
     cudaDeviceReset();
