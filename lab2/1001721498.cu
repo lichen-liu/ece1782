@@ -42,13 +42,13 @@ __host__ float getB(float *B, int n, int i, int j, int k)
 
 __host__ void jacobiRelaxationReference(float *A, float *B, int n)
 {
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
         int iIndex = i * n * n;
-        for (j = 0; j < n; j++)
+        for (int j = 0; j < n; j++)
         {
             int ijIndex = iIndex + j * n;
-            for (k = 0; k < n; k++)
+            for (int k = 0; k < n; k++)
             {
                 int ijkIndex = ijIndex + k;
                 if (i >= n - 1 || j >= n - 1 || k >= n - 1)
