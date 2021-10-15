@@ -13,23 +13,6 @@ __host__ long getTimeStamp()
     return (long)tv.tv_usec / 1000 + tv.tv_sec * 1000;
 }
 
-__host__ void initB_old(float *B, int n)
-{
-    for (int i = 0; i < n; i++)
-    {
-        int iIndex = i * n * n;
-        for (int j = 0; j < n; j++)
-        {
-            int ijIndex = iIndex + j * n;
-            for (int k = 0; k < n; k++)
-            {
-                int ijkIndex = ijIndex + k;
-                B[ijkIndex] = ((i + j + k) % 10) * (float)1.1;
-            }
-        }
-    }
-}
-
 __host__ void initB(float *B, int nB)
 {
     for (int i = 0; i < nB; i++)
@@ -52,16 +35,6 @@ __host__ void initB(float *B, int nB)
             }
         }
     }
-}
-
-__device__ float d_getB(float *B, int n, int i, int j, int k)
-{
-    if (i < 0 || i >= n || j < 0 || j >= n || k < 0 || k >= n)
-    {
-        return 0;
-    }
-
-    return B[i * n * n + j * n + k];
 }
 
 #define h_getB(B, nB, i, j, k) B[((i) + 1) * nB * nB + ((j) + 1) * nB + ((k) + 1)]
@@ -139,9 +112,14 @@ __host__ float sumA(float *A, int n)
     return sum;
 }
 
+#define d_getB(B, nB, i, j, k) B[((i) + 1) * nB * nB + ((j) + 1) * nB + ((k) + 1)]
+
 __global__ void jacobiRelaxation(float *A, float *B, int n)
 {
     extern __shared__ float s_data[];
+
+    int nB = n + 1;
+
     /* Global Coordinate */
     int globalK = blockDim.x * blockIdx.x + threadIdx.x;
     int globalJ = blockDim.y * blockIdx.y + threadIdx.y;
@@ -160,12 +138,12 @@ __global__ void jacobiRelaxation(float *A, float *B, int n)
     }
 
     // __syncthreads();
-    A[globalIdx] = (float)0.8 * (d_getB(B, n, globalI - 1, globalJ, globalK) +
-                                 d_getB(B, n, globalI + 1, globalJ, globalK) +
-                                 d_getB(B, n, globalI, globalJ - 1, globalK) +
-                                 d_getB(B, n, globalI, globalJ + 1, globalK) +
-                                 d_getB(B, n, globalI, globalJ, globalK - 1) +
-                                 d_getB(B, n, globalI, globalJ, globalK + 1));
+    A[globalIdx] = (float)0.8 * (d_getB(B, nB, globalI - 1, globalJ, globalK) +
+                                 d_getB(B, nB, globalI + 1, globalJ, globalK) +
+                                 d_getB(B, nB, globalI, globalJ - 1, globalK) +
+                                 d_getB(B, nB, globalI, globalJ + 1, globalK) +
+                                 d_getB(B, nB, globalI, globalJ, globalK - 1) +
+                                 d_getB(B, nB, globalI, globalJ, globalK + 1));
 }
 
 int main(int argc, char *argv[])
@@ -191,8 +169,6 @@ int main(int argc, char *argv[])
 #endif
 
     /* Allocate Host Memory */
-    float *h_B_old = NULL;
-    error = error || cudaHostAlloc((void **)&h_B_old, numBytes, 0);
     float *h_B = NULL;
     error = error || cudaHostAlloc((void **)&h_B, numBytesB, 0);
     float *h_hA = (float *)malloc(numBytes);
@@ -205,7 +181,6 @@ int main(int argc, char *argv[])
     }
 
     /* Initialize Host Memory */
-    initB_old(h_B_old, n);
     initB(h_B, nB);
 #ifndef NDEBUG
     long timestampPreCpuKernel = getTimeStamp();
@@ -218,7 +193,7 @@ int main(int argc, char *argv[])
 
     /* Allocate Device Memory */
     float *d_B = NULL;
-    error = error || cudaMalloc((void **)&d_B, numBytes);
+    error = error || cudaMalloc((void **)&d_B, numBytesB);
     float *d_A = NULL;
     error = error || cudaMalloc((void **)&d_A, numBytes);
     if (error)
@@ -229,7 +204,7 @@ int main(int argc, char *argv[])
 
     /* Copy Host Memory to Device Memory */
     long timestampPreCpuGpuTransfer = getTimeStamp();
-    error = error || cudaMemcpy(d_B, h_B_old, numBytes, cudaMemcpyHostToDevice);
+    error = error || cudaMemcpy(d_B, h_B, numBytesB, cudaMemcpyHostToDevice);
     if (error)
     {
         printf("Error: cudaMemcpy returns error\n");
@@ -301,8 +276,6 @@ int main(int argc, char *argv[])
     h_hA = NULL;
     cudaFreeHost(h_B);
     h_B = NULL;
-    cudaFreeHost(h_B_old);
-    h_B_old = NULL;
 
     /* Clean Up Device Resource */
     cudaDeviceReset();
