@@ -133,12 +133,12 @@ __global__ void jacobiRelaxation(float *A, float *B, int n)
     }
 
     // __syncthreads();
-    A[globalIdx] = (float)0.8 * (getB(B, n, i - 1, j, k) +
-                                 getB(B, n, i + 1, j, k) +
-                                 getB(B, n, i, j - 1, k) +
-                                 getB(B, n, i, j + 1, k) +
-                                 getB(B, n, i, j, k - 1) +
-                                 getB(B, n, i, j, k + 1));
+    A[globalIdx] = (float)0.8 * (getB(B, n, globalI - 1, globalJ, globalK) +
+                                 getB(B, n, globalI + 1, globalJ, globalK) +
+                                 getB(B, n, globalI, globalJ - 1, globalK) +
+                                 getB(B, n, globalI, globalJ + 1, globalK) +
+                                 getB(B, n, globalI, globalJ, globalK - 1) +
+                                 getB(B, n, globalI, globalJ, globalK + 1));
 }
 
 int main(int argc, char *argv[])
