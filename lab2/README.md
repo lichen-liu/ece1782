@@ -1,5 +1,18 @@
 # LAB2
 
+## To Compile
+```
+nvcc 1001721498.cu -o 1001721498
+nvcc 1001721498.cu -o 1001721498 -res-usage
+nvcc 1001721498.cu -o 1001721498 -res-usage -D NDEBUG
+```
+
+## To Run
+```
+# ug62
+./1001721498 738
+```
+
 ## Specification
 Consider the following code for "Jacobi relaxation" with input cube b and output cube a.  For each element to be computed, a function of the neighboring values (defined by a "stencil") is calculated. Assume that elements outside the input cube are 0.
 
