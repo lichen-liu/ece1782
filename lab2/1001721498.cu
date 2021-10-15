@@ -30,7 +30,7 @@ __host__ void initB(float *B, int n)
     }
 }
 
-__host__ float getB(float *B, int n, int i, int j, int k)
+float getB(float *B, int n, int i, int j, int k)
 {
     if (i < 0 || i >= n || j < 0 || j >= n || k < 0 || k >= n)
     {
@@ -120,7 +120,25 @@ __global__ void jacobiRelaxation(float *A, float *B, int n)
     int globalJ = blockDim.y * blockIdx.y + threadIdx.y;
     int globalI = blockDim.z * blockIdx.z + threadIdx.z;
     int globalIdx = globalI * n * n + globalJ * n + globalK;
-    __syncthreads();
+
+    if (globalK >= n || globalJ >= n || globalI >= n)
+    {
+        return;
+    }
+
+    if (globalK == n - 1 || globalJ == n - 1 || globalI == n - 1)
+    {
+        A[globalIdx] = 0;
+        return;
+    }
+
+    // __syncthreads();
+    A[globalIdx] = (float)0.8 * (getB(B, n, i - 1, j, k) +
+                                 getB(B, n, i + 1, j, k) +
+                                 getB(B, n, i, j - 1, k) +
+                                 getB(B, n, i, j + 1, k) +
+                                 getB(B, n, i, j, k - 1) +
+                                 getB(B, n, i, j, k + 1));
 }
 
 int main(int argc, char *argv[])
@@ -185,17 +203,19 @@ int main(int argc, char *argv[])
 
     /* Run Kernel */
     long timestampPreKernel = getTimeStamp();
-    // dim3 d_blockDim;
-    // d_blockDim.x = 32;
-    // d_blockDim.y = 32;
-    // dim3 d_gridDim;
-    // d_gridDim.x = (numCols - 1) / d_blockDim.x + 1;
-    // d_gridDim.y = (numRows - 1) / d_blockDim.y + 1;
+    dim3 d_blockDim;
+    d_blockDim.x = 8;
+    d_blockDim.y = 8;
+    d_blockDim.z = 8;
+    dim3 d_gridDim;
+    d_gridDim.x = (n - 1) / d_blockDim.x + 1;
+    d_gridDim.y = (n - 1) / d_blockDim.y + 1;
+    d_gridDim.z = (n - 1) / d_blockDim.z + 1;
     // int d_smemNumElemX = d_blockDim.x * (d_blockDim.y + 2);
     // int d_smemNumElemY = (d_blockDim.x + 2) * d_blockDim.y;
     // size_t d_smemNumBytes = (d_smemNumElemX + d_smemNumElemY) * sizeof(float);
-    // f_siggen<<<d_gridDim, d_blockDim, d_smemNumBytes>>>(d_X, d_Y, d_Z, numRows, numCols, d_smemNumElemX);
-    // cudaDeviceSynchronize();
+    jacobiRelaxation<<<d_gridDim, d_blockDim>>>(d_A, d_B, n);
+    cudaDeviceSynchronize();
 
     /* Copy Device Memory to Host Memory */
     long timestampPreGpuCpuTransfer = getTimeStamp();
