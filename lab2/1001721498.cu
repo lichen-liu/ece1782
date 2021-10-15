@@ -30,7 +30,7 @@ __host__ void initB(float *B, int n)
     }
 }
 
-__device__ float d_getB(float *B, int n, int i, int j, int k)
+__device__ float getB(float *B, int n, int i, int j, int k)
 {
     if (i < 0 || i >= n || j < 0 || j >= n || k < 0 || k >= n)
     {
@@ -40,7 +40,7 @@ __device__ float d_getB(float *B, int n, int i, int j, int k)
     return B[i * n * n + j * n + k];
 }
 
-__global__ float getB(float *B, int n, int i, int j, int k)
+__host__ float getB(float *B, int n, int i, int j, int k)
 {
     if (i < 0 || i >= n || j < 0 || j >= n || k < 0 || k >= n)
     {
@@ -143,12 +143,12 @@ __global__ void jacobiRelaxation(float *A, float *B, int n)
     }
 
     // __syncthreads();
-    A[globalIdx] = (float)0.8 * (d_getB(B, n, globalI - 1, globalJ, globalK) +
-                                 d_getB(B, n, globalI + 1, globalJ, globalK) +
-                                 d_getB(B, n, globalI, globalJ - 1, globalK) +
-                                 d_getB(B, n, globalI, globalJ + 1, globalK) +
-                                 d_getB(B, n, globalI, globalJ, globalK - 1) +
-                                 d_getB(B, n, globalI, globalJ, globalK + 1));
+    A[globalIdx] = (float)0.8 * (getB(B, n, globalI - 1, globalJ, globalK) +
+                                 getB(B, n, globalI + 1, globalJ, globalK) +
+                                 getB(B, n, globalI, globalJ - 1, globalK) +
+                                 getB(B, n, globalI, globalJ + 1, globalK) +
+                                 getB(B, n, globalI, globalJ, globalK - 1) +
+                                 getB(B, n, globalI, globalJ, globalK + 1));
 }
 
 int main(int argc, char *argv[])
