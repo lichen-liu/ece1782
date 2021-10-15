@@ -30,15 +30,15 @@ __host__ void initB(float *B, int n)
     }
 }
 
-// __host__ float getB(float *B, int n, int i, int j, int k)
-// {
-//     if (i < 0 || i >= n || j < 0 || j >= n || k < 0 || k >= n)
-//     {
-//         return 0;
-//     }
+__device__ float getB(float *B, int n, int i, int j, int k)
+{
+    if (i < 0 || i >= n || j < 0 || j >= n || k < 0 || k >= n)
+    {
+        return 0;
+    }
 
-//     return B[i * n * n + j * n + k];
-// }
+    return B[i * n * n + j * n + k];
+}
 
 __global__ float getB(float *B, int n, int i, int j, int k)
 {
