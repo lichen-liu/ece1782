@@ -182,6 +182,7 @@ __global__ void jacobiRelaxation(float *A, float *B, int n, int startingI)
 int main(int argc, char *argv[])
 {
     int error = 0;
+
     /* Get Dimension */
     if (argc != 2)
     {
@@ -236,7 +237,7 @@ int main(int argc, char *argv[])
     }
 
     /* Configuration */
-#define NUM_STREAM 1
+#define NUM_STREAM 2
     int nIStreams[NUM_STREAM];
     for (int i = 0; i < NUM_STREAM; i++)
     {
@@ -257,7 +258,7 @@ int main(int argc, char *argv[])
         d_gridDimStreams[i].z = (nIStreams[i] - 1) / d_blockDim.z + 1;
     }
 
-    /* Create Two Streams */
+    /* Create NUM_STREAM Streams */
     cudaStream_t d_streams[NUM_STREAM];
     for (int i = 0; i < NUM_STREAM; i++)
     {
@@ -300,6 +301,7 @@ int main(int argc, char *argv[])
             cudaStreamSynchronize(d_streams[i]);
         }
     }
+
     if (numElemBStreams != numElemB)
     {
         printf("Error: cudaMemcpyAsync does not cover entire B (%ld != %ld)\n", numElemBStreams, numElemB);
