@@ -163,21 +163,20 @@ __global__ void jacobiRelaxation(float *A, float *B, int n, int startingI)
     }
 
     __syncthreads();
-    A[globalIdx] = 1;
 
-    // if (globalK == n - 1 || globalJ == n - 1 || globalI == n - 1)
-    // {
-    //     A[globalIdx] = 0;
-    // }
-    // else
-    // {
-    //     A[globalIdx] = (float)0.8 * (s_data[localIdx - sizePerLocalI] +
-    //                                  s_data[localIdx + sizePerLocalI] +
-    //                                  s_data[localIdx - sizePerLocalJ] +
-    //                                  s_data[localIdx + sizePerLocalJ] +
-    //                                  s_data[localIdx - 1] +
-    //                                  s_data[localIdx + 1]);
-    // }
+    if (globalK == n - 1 || globalJ == n - 1 || globalI == n - 1)
+    {
+        A[globalIdx] = -1;
+    }
+    else
+    {
+        A[globalIdx] = (float)0.8 * (s_data[localIdx - sizePerLocalI] +
+                                     s_data[localIdx + sizePerLocalI] +
+                                     s_data[localIdx - sizePerLocalJ] +
+                                     s_data[localIdx + sizePerLocalJ] +
+                                     s_data[localIdx - 1] +
+                                     s_data[localIdx + 1]);
+    }
 }
 
 int main(int argc, char *argv[])
