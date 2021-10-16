@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
     }
 
     /* Configuration */
-#define NUM_STREAM 2
+#define NUM_STREAM 3
     int nIStreams[NUM_STREAM];
     for (int i = 0; i < NUM_STREAM; i++)
     {
@@ -331,6 +331,7 @@ int main(int argc, char *argv[])
         error = error || cudaMemcpyAsync(h_dA + numElemAStreams, d_A + numElemAStreams, numElemAStreami * sizeof(float), cudaMemcpyDeviceToHost, d_streams[i]);
         numElemAStreams += numElemAStreami;
     }
+
     if (numElemAStreams != numElem)
     {
         printf("Error: cudaMemcpyAsync does not cover entire A\n");
@@ -342,6 +343,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    /* Synchronize Streams */
     for (int i = 0; i < NUM_STREAM; i++)
     {
         cudaStreamSynchronize(d_streams[i]);
