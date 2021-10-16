@@ -93,9 +93,9 @@ __host__ int checkA(float *Expected, float *Actual, int n)
     return 1;
 }
 
-__host__ float sumA(float *A, int n)
+__host__ double sumA(float *A, int n)
 {
-    float sum = 0;
+    double sum = 0;
     for (int i = 0; i < n; i++)
     {
         int iIndex = i * n * n;
@@ -285,7 +285,7 @@ int main(int argc, char *argv[])
 
     if (!error)
     {
-        float aValue = sumA(h_dA, n);
+        double aValue = sumA(h_dA, n);
         long totalGpuElapased = timestampPostGpuCpuTransfer - timestampPreCpuGpuTransfer;
         printf("%lf %ld\n", aValue, totalGpuElapased);
 #ifndef NDEBUG
