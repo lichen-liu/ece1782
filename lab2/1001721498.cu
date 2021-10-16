@@ -3,7 +3,7 @@
 #include <sys/time.h>
 
 // Comment out this line to enable debug mode
-// #define NDEBUG
+#define NDEBUG
 
 /* time stamp function in milliseconds */
 __host__ long getTimeStamp()
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
     }
 
     /* Configuration */
-#define NUM_STREAM 2
+#define NUM_STREAM 1
     int nIStreams[NUM_STREAM];
     for (int i = 0; i < NUM_STREAM; i++)
     {
