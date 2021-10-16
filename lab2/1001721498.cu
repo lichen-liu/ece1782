@@ -246,10 +246,10 @@ int main(int argc, char *argv[])
     d_gridDimStream1.x = (n - 1) / d_blockDim.x + 1;
     d_gridDimStream1.y = (n - 1) / d_blockDim.y + 1;
     d_gridDimStream1.z = (nIStream1 - 1) / d_blockDim.z + 1;
-    dim3 d_gridDimStream1;
-    d_gridDimStream1.x = (n - 1) / d_blockDim.x + 1;
-    d_gridDimStream1.y = (n - 1) / d_blockDim.y + 1;
-    d_gridDimStream1.z = (nIStream2 - 1) / d_blockDim.z + 1;
+    dim3 d_gridDimStream2;
+    d_gridDimStream2.x = (n - 1) / d_blockDim.x + 1;
+    d_gridDimStream2.y = (n - 1) / d_blockDim.y + 1;
+    d_gridDimStream2.z = (nIStream2 - 1) / d_blockDim.z + 1;
 
     /* Create Two Streams */
     cudaStream_t d_stream1;
@@ -312,7 +312,8 @@ int main(int argc, char *argv[])
 
 /* Output */
 #ifndef NDEBUG
-    printf("d_gridDim=(%d, %d, %d), d_blockDim=(%d, %d, %d), d_smemNumBytes=%ld\n", d_gridDim.x, d_gridDim.y, d_gridDim.z, d_blockDim.x, d_blockDim.y, d_blockDim.z, d_smemNumBytes);
+    printf("d_gridDimStream1=(%d, %d, %d), d_blockDim=(%d, %d, %d), d_smemNumBytes=%ld\n", d_gridDimStream1.x, d_gridDimStream1.y, d_gridDimStream1.z, d_blockDim.x, d_blockDim.y, d_blockDim.z, d_smemNumBytes);
+    printf("d_gridDimStream2=(%d, %d, %d), d_blockDim=(%d, %d, %d), d_smemNumBytes=%ld\n", d_gridDimStream2.x, d_gridDimStream2.y, d_gridDimStream2.z, d_blockDim.x, d_blockDim.y, d_blockDim.z, d_smemNumBytes);
 #endif
 
     if (!error)
