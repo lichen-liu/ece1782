@@ -112,8 +112,6 @@ __host__ float sumA(float *A, int n)
     return sum;
 }
 
-#define d_getB(B, nB, i, j, k) B[((i) + 1) * nB * nB + ((j) + 1) * nB + ((k) + 1)]
-
 __global__ void jacobiRelaxation(float *A, float *B, int n)
 {
     extern __shared__ float s_data[];
@@ -125,6 +123,12 @@ __global__ void jacobiRelaxation(float *A, float *B, int n)
     int globalJ = blockDim.y * blockIdx.y + threadIdx.y;
     int globalI = blockDim.z * blockIdx.z + threadIdx.z;
     int globalIdx = globalI * n * n + globalJ * n + globalK;
+
+    int sizePerGlobalBI = nB * nB;
+    int sizePerGlobalBJ = nB;
+    int globalBIIndex = (globalI + 1) * sizePerGlobalBI;
+    int globalBIJIndex = globalBIIndex + (globalJ + 1) * sizePerGlobalBJ;
+    int globalBIdx = globalBIJIndex + (globalK + 1);
 
     if (globalK >= n || globalJ >= n || globalI >= n)
     {
@@ -138,12 +142,12 @@ __global__ void jacobiRelaxation(float *A, float *B, int n)
     }
 
     // __syncthreads();
-    A[globalIdx] = (float)0.8 * (d_getB(B, nB, globalI - 1, globalJ, globalK) +
-                                 d_getB(B, nB, globalI + 1, globalJ, globalK) +
-                                 d_getB(B, nB, globalI, globalJ - 1, globalK) +
-                                 d_getB(B, nB, globalI, globalJ + 1, globalK) +
-                                 d_getB(B, nB, globalI, globalJ, globalK - 1) +
-                                 d_getB(B, nB, globalI, globalJ, globalK + 1));
+    A[globalIdx] = (float)0.8 * (B[globalBIdx - sizePerGlobalBI] +
+                                 B[globalBIdx + sizePerGlobalBI] +
+                                 B[globalBIdx - sizePerGlobalBJ] +
+                                 B[globalBIdx + sizePerGlobalBJ] +
+                                 B[globalBIdx - 1] +
+                                 B[globalBIdx + 1]);
 }
 
 int main(int argc, char *argv[])
