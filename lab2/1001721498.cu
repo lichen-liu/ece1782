@@ -272,7 +272,15 @@ int main(int argc, char *argv[])
     /* Copy Host Memory to Device Memory */
     long timestampPreCpuGpuTransfer = getTimeStamp();
 
-    size_t numElemBStream1 = (nIStreams[0] + 1 + 1) * nB * nB;
+    size_t numElemBStream1 = 0;
+    if (NUM_STREAM != 1)
+    {
+        numElemBStream1 = (nIStreams[0] + 1 + 1) * nB * nB;
+    }
+    else
+    {
+        numElemBStream1 = (nIStreams[0] + 1) * nB * nB;
+    }
     error = error || cudaMemcpyAsync(d_B, h_B, numElemBStream1 * sizeof(float), cudaMemcpyHostToDevice, d_streams[0]);
     if (NUM_STREAM != 1)
     {
