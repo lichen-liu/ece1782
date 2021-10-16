@@ -264,14 +264,16 @@ int main(int argc, char *argv[])
 
     /* Copy Host Memory to Device Memory */
     long timestampPreCpuGpuTransfer = getTimeStamp();
-    size_t numElemBStream1 = (nIStream1 + 1) * nB * nB;
+    int nBIStream1 = nIStream1 + 1;
+    size_t numElemBStream1 = (nBIStream1 + 1) * nB * nB;
     cudaMemcpyAsync(d_B, h_B, numElemBStream1 * sizeof(float), cudaMemcpyHostToDevice, d_stream1);
     cudaStreamSynchronize(d_stream1);
-    size_t numElemBStream2 = (nIStream2 - 1) * nB * nB;
+    int nBIStream2 = nIStream2 + 1;
+    size_t numElemBStream2 = (nBIStream2 - 1) * nB * nB;
     cudaMemcpyAsync(d_B + numElemBStream1, h_B + numElemBStream1, numElemBStream2 * sizeof(float), cudaMemcpyHostToDevice, d_stream2);
     if (numElemBStream1 + numElemBStream2 != numElemB)
     {
-        printf("Error: cudaMemcpyAsync does not cover entire B\n");
+        printf("Error: cudaMemcpyAsync does not cover entire B (%ld + %ld != %ld)\n", numElemBStream1, numElemBStream2, numElemB);
         return 0;
     }
 
