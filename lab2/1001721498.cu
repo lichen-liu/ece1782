@@ -290,9 +290,9 @@ int main(int argc, char *argv[])
     jacobiRelaxation<<<d_gridDimStream2, d_blockDim, d_smemNumBytes, d_stream2>>>(d_A, d_B, n, nIStream1);
 
     /* Copy Device Memory to Host Memory */
-    size_t numElemAStream1 = nIStream1 * nB * nB;
+    size_t numElemAStream1 = nIStream1 * n * n;
     cudaMemcpyAsync(h_dA, d_A, numElemAStream1 * sizeof(float), cudaMemcpyDeviceToHost, d_stream1);
-    size_t numElemAStream2 = nIStream2 * nB * nB;
+    size_t numElemAStream2 = nIStream2 * n * n;
     cudaMemcpyAsync(h_dA + numElemAStream1, d_A + numElemAStream1, numElemAStream2 * sizeof(float), cudaMemcpyDeviceToHost, d_stream2);
     if (numElemAStream1 + numElemAStream2 != numElem)
     {
