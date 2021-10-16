@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
     }
 
     /* Configuration */
-#define NUM_STREAM 3
+#define NUM_STREAM 4
     int nIStreams[NUM_STREAM];
     for (int i = 0; i < NUM_STREAM; i++)
     {
