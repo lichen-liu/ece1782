@@ -272,16 +272,15 @@ int main(int argc, char *argv[])
     /* Copy Host Memory to Device Memory */
     long timestampPreCpuGpuTransfer = getTimeStamp();
 
-    int nBIStream1 = nIStream1 + 1;
-    size_t numElemBStream1 = (nBIStream1 + 1) * nB * nB;
+    size_t numElemBStream1 = (nIStreams[0] + 1 + 1) * nB * nB;
     cudaMemcpyAsync(d_B, h_B, numElemBStream1 * sizeof(float), cudaMemcpyHostToDevice, d_streams[0]);
-    cudaStreamSynchronize(d_stream1);
+    cudaStreamSynchronize(d_streams[0]);
 
     int numElemBStreams = numElemBStream1;
     for (int i = 1; i < NUM_STREAM; i++)
     {
         int nBIStreami = nIStreams[i];
-        size_t numElemBStreami = ((i==NUM_STREAM-1)?(nBIStreami-1:nBIStreami)) * nB * nB;
+        size_t numElemBStreami = ((i == NUM_STREAM - 1) ? nBIStreami - 1 : nBIStreami) * nB * nB;
         cudaMemcpyAsync(d_B + numElemBStreams, h_B + numElemBStreams, numElemBStreami * sizeof(float), cudaMemcpyHostToDevice, d_streams[i]);
         numElemBStreams += numElemBStreami;
     }
@@ -297,7 +296,7 @@ int main(int argc, char *argv[])
     size_t d_smemNumBytes = d_smemNumElem * sizeof(float);
     for (int i = 0; i < NUM_STREAM; i++)
     {
-        jacobiRelaxation<<<d_gridDimStream1, d_blockDim, d_smemNumBytes, d_streams[i]>>>(d_A, d_B, n, (i == 0) ? 0 : nIStreams[i - 1]);
+        jacobiRelaxation<<<d_gridDimStreams[i], d_blockDim, d_smemNumBytes, d_streams[i]>>>(d_A, d_B, n, (i == 0) ? 0 : nIStreams[i - 1]);
     }
 
     /* Copy Device Memory to Host Memory */
