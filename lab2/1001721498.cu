@@ -247,8 +247,8 @@ int main(int argc, char *argv[])
     /* Run Kernel */
     long timestampPreKernel = getTimeStamp();
     dim3 d_blockDim;
-    d_blockDim.x = 32;
-    d_blockDim.y = 16;
+    d_blockDim.x = 64;
+    d_blockDim.y = 8;
     d_blockDim.z = 2;
     dim3 d_gridDim;
     d_gridDim.x = (n - 1) / d_blockDim.x + 1;
