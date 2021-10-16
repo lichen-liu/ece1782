@@ -267,7 +267,7 @@ int main(int argc, char *argv[])
     size_t numElemBStream1 = (nIStream1 + 1) * nB * nB;
     cudaMemcpyAsync(d_B, h_B, numElemBStream1 * sizeof(float), cudaMemcpyHostToDevice, d_stream1);
     cudaStreamSynchronize(d_stream1);
-    size_t numElemBStream2 = (nIstream2 - 1) * nB * nB;
+    size_t numElemBStream2 = (nIStream2 - 1) * nB * nB;
     cudaMemcpyAsync(d_B + numElemBStream1, h_B + numElemBStream1, numElemBStream2 * sizeof(float), cudaMemcpyHostToDevice, d_stream2);
     if (numElemBStream1 + numElemBStream2 != numElem)
     {
