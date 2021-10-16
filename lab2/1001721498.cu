@@ -284,23 +284,23 @@ int main(int argc, char *argv[])
     // }
 
     /* Run Kernel */
-    long timestampPreKernel = getTimeStamp();
     int d_smemNumElem = (d_blockDim.x + 2) * (d_blockDim.y + 2) * (d_blockDim.z + 2);
     size_t d_smemNumBytes = d_smemNumElem * sizeof(float);
     jacobiRelaxation<<<d_gridDimStream1, d_blockDim, d_smemNumBytes, d_stream1>>>(d_A, d_B, n, 0);
     jacobiRelaxation<<<d_gridDimStream2, d_blockDim, d_smemNumBytes, d_stream2>>>(d_A, d_B, n, nIStream1);
-    cudaStreamSynchronize(d_stream1);
-    cudaStreamSynchronize(d_stream2);
-    // cudaDeviceSynchronize();
 
     /* Copy Device Memory to Host Memory */
-    long timestampPreGpuCpuTransfer = getTimeStamp();
-    error = error || cudaMemcpy(h_dA, d_A, numBytes, cudaMemcpyDeviceToHost);
-    if (error)
+    size_t numElemAStream1 = nIStream1 * nB * nB;
+    cudaMemcpyAsync(h_dA, d_A, numElemAStream1 * sizeof(float), cudaMemcpyDeviceToHost, d_stream1);
+    size_t numElemAStream2 = nIStream2 * nB * nB;
+    cudaMemcpyAsync(h_dA + numElemAStream1, d_A + numElemAStream1, numElemAStream2 * sizeof(float), cudaMemcpyDeviceToHost, d_stream2);
+    if (numElemAStream1 + numElemAStream2 != numElem)
     {
-        printf("Error: cudaMemcpy returns error\n");
+        printf("Error: cudaMemcpyAsync does not cover entire A\n");
         return 0;
     }
+    cudaStreamSynchronize(d_stream1);
+    cudaStreamSynchronize(d_stream2);
     long timestampPostGpuCpuTransfer = getTimeStamp();
 
     /* Free Device Memory */
