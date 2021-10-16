@@ -330,8 +330,10 @@ int main(int argc, char *argv[])
 
 /* Output */
 #ifndef NDEBUG
-    printf("d_gridDimStream1=(%d, %d, %d), d_blockDim=(%d, %d, %d), d_smemNumBytes=%ld\n", d_gridDimStream1.x, d_gridDimStream1.y, d_gridDimStream1.z, d_blockDim.x, d_blockDim.y, d_blockDim.z, d_smemNumBytes);
-    printf("d_gridDimStream2=(%d, %d, %d), d_blockDim=(%d, %d, %d), d_smemNumBytes=%ld\n", d_gridDimStream2.x, d_gridDimStream2.y, d_gridDimStream2.z, d_blockDim.x, d_blockDim.y, d_blockDim.z, d_smemNumBytes);
+    for (int i = 0; i < NUM_STREAM; i++)
+    {
+        printf("d_gridDimStream%d=(%d, %d, %d), d_blockDim=(%d, %d, %d), d_smemNumBytes=%ld\n", i, d_gridDimStreams[i].x, d_gridDimStreams[i].y, d_gridDimStreams[i].z, d_blockDim.x, d_blockDim.y, d_blockDim.z, d_smemNumBytes);
+    }
 #endif
 
     if (!error)
