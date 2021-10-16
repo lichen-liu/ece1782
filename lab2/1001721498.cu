@@ -83,13 +83,9 @@ __host__ int checkA(float *Expected, float *Actual, int n)
                 if (Expected[ijkIndex] != Actual[ijkIndex])
                 {
 #ifndef NDEBUG
-                    if (Actual[ijkIndex] != -1)
-                    {
-                        printf("(i=%d, j=%d, k=%d) Expected=%f Actual=%f\n", i, j, k, Expected[ijkIndex], Actual[ijkIndex]);
-                        return 0;
-                    }
+                    printf("(i=%d, j=%d, k=%d) Expected=%f Actual=%f\n", i, j, k, Expected[ijkIndex], Actual[ijkIndex]);
 #endif
-                    // return 0;
+                    return 0;
                 }
             }
         }
@@ -170,7 +166,7 @@ __global__ void jacobiRelaxation(float *A, float *B, int n, int startingI)
 
     if (globalK == n - 1 || globalJ == n - 1 || globalI == n - 1)
     {
-        A[globalIdx] = -1;
+        A[globalIdx] = 0;
     }
     else
     {
@@ -310,9 +306,11 @@ int main(int argc, char *argv[])
     /* Run Kernel */
     int d_smemNumElem = (d_blockDim.x + 2) * (d_blockDim.y + 2) * (d_blockDim.z + 2);
     size_t d_smemNumBytes = d_smemNumElem * sizeof(float);
+    size_t d_startingI = 0;
     for (int i = 0; i < NUM_STREAM; i++)
     {
-        jacobiRelaxation<<<d_gridDimStreams[i], d_blockDim, d_smemNumBytes, d_streams[i]>>>(d_A, d_B, n, (i == 0) ? 0 : nIStreams[i - 1]);
+        jacobiRelaxation<<<d_gridDimStreams[i], d_blockDim, d_smemNumBytes, d_streams[i]>>>(d_A, d_B, n, d_startingI);
+        d_startingI += nIStreams[i];
     }
 
     /* Copy Device Memory to Host Memory */
