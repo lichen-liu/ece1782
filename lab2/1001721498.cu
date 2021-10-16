@@ -116,14 +116,13 @@ __global__ void jacobiRelaxation(float *A, float *B, int n)
 {
     extern __shared__ float s_data[];
 
-    int nB = n + 1;
-
-    /* Global Coordinate */
+    /* Global Index */
     int globalK = blockDim.x * blockIdx.x + threadIdx.x;
     int globalJ = blockDim.y * blockIdx.y + threadIdx.y;
     int globalI = blockDim.z * blockIdx.z + threadIdx.z;
     int globalIdx = globalI * n * n + globalJ * n + globalK;
 
+    int nB = n + 1;
     int sizePerGlobalBI = nB * nB;
     int sizePerGlobalBJ = nB;
     int globalBIIndex = (globalI + 1) * sizePerGlobalBI;
@@ -135,19 +134,59 @@ __global__ void jacobiRelaxation(float *A, float *B, int n)
         return;
     }
 
+    /* Local Index */
+    int sizeI = blockDim.z + 2;
+    int sizeJ = blockDim.y + 2;
+    int sizeK = blockDim.x + 2;
+    int sizePerLocalI = sizeJ * sizeK;
+    int sizePerLocalJ = sizeK;
+    int localIIndex = (threadIdx.z + 1) * sizePerLocalI;
+    int localIJIndex = localIIndex + (threadIdx.y + 1) * sizePerLocalJ;
+    int localIdx = localIJIndex + (threadIdx.x + 1);
+
+    s_data[localIdx] = B[globalBIdx];
+
+    if (threadIdx.z == 0)
+    {
+        s_data[localIdx - sizePerLocalI] = B[globalBIdx - sizePerGlobalBI];
+    }
+    if (threadIdx.y == 0)
+    {
+        s_data[localIdx - sizePerLocalJ] = B[globalBIdx - sizePerGlobalBJ];
+    }
+    if (threadIdx.x == 0)
+    {
+        s_data[localIdx - 1] = B[globalBIdx - 1];
+    }
+
+    if (threadIdx.z == blockDim.z - 1)
+    {
+        s_data[localIdx + sizePerLocalI] = B[globalBIdx + sizePerGlobalBI];
+    }
+    if (threadIdx.y == blockDim.y - 1)
+    {
+        s_data[localIdx + sizePerLocalJ] = B[globalBIdx + sizePerGlobalBJ];
+    }
+    if (threadIdx.x == blockDim.x - 1)
+    {
+        s_data[localIdx + 1] = B[globalBIdx + 1];
+    }
+
+    __syncthreads();
+
     if (globalK == n - 1 || globalJ == n - 1 || globalI == n - 1)
     {
         A[globalIdx] = 0;
-        return;
     }
-
-    // __syncthreads();
-    A[globalIdx] = (float)0.8 * (B[globalBIdx - sizePerGlobalBI] +
-                                 B[globalBIdx + sizePerGlobalBI] +
-                                 B[globalBIdx - sizePerGlobalBJ] +
-                                 B[globalBIdx + sizePerGlobalBJ] +
-                                 B[globalBIdx - 1] +
-                                 B[globalBIdx + 1]);
+    else
+    {
+        A[globalIdx] = (float)0.8 * (s_data[localIdx - sizePerLocalI] +
+                                     s_data[localIdx + sizePerLocalI] +
+                                     s_data[localIdx - sizePerLocalJ] +
+                                     s_data[localIdx + sizePerLocalJ] +
+                                     s_data[localIdx - 1] +
+                                     s_data[localIdx + 1]);
+    }
 }
 
 int main(int argc, char *argv[])
@@ -225,10 +264,9 @@ int main(int argc, char *argv[])
     d_gridDim.x = (n - 1) / d_blockDim.x + 1;
     d_gridDim.y = (n - 1) / d_blockDim.y + 1;
     d_gridDim.z = (n - 1) / d_blockDim.z + 1;
-    // int d_smemNumElemX = d_blockDim.x * (d_blockDim.y + 2);
-    // int d_smemNumElemY = (d_blockDim.x + 2) * d_blockDim.y;
-    // size_t d_smemNumBytes = (d_smemNumElemX + d_smemNumElemY) * sizeof(float);
-    jacobiRelaxation<<<d_gridDim, d_blockDim>>>(d_A, d_B, n);
+    int d_smemNumElem = (d_blockDim.x + 2) * (d_blockDim.y + 2) * (d_blockDim.z + 2);
+    size_t d_smemNumBytes = d_smemNumElem * sizeof(float);
+    jacobiRelaxation<<<d_gridDim, d_blockDim, d_smemNumBytes>>>(d_A, d_B, n);
     cudaDeviceSynchronize();
 
     /* Copy Device Memory to Host Memory */
@@ -250,10 +288,10 @@ int main(int argc, char *argv[])
     /* Verify Device Result with Host Result */
     error = error || !checkA(h_hA, h_dA, n);
 
-    /* Output */
-    // #ifndef NDEBUG
-    //     printf("d_gridDim=(%d, %d, %d), d_blockDim=(%d, %d, %d), d_smemNumBytes=%ld\n", d_gridDim.x, d_gridDim.y, d_gridDim.z, d_blockDim.x, d_blockDim.y, d_blockDim.z, d_smemNumBytes);
-    // #endif
+/* Output */
+#ifndef NDEBUG
+    printf("d_gridDim=(%d, %d, %d), d_blockDim=(%d, %d, %d), d_smemNumBytes=%ld\n", d_gridDim.x, d_gridDim.y, d_gridDim.z, d_blockDim.x, d_blockDim.y, d_blockDim.z, d_smemNumBytes);
+#endif
 
     if (!error)
     {
