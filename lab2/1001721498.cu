@@ -85,7 +85,7 @@ __host__ int checkA(float *Expected, float *Actual, int n)
 #ifndef NDEBUG
                     printf("(i=%d, j=%d, k=%d) Expected=%f Actual=%f\n", i, j, k, Expected[ijkIndex], Actual[ijkIndex]);
 #endif
-                    return 0;
+                    //return 0;
                 }
             }
         }
@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
     }
 
     /* Configuration */
-#define NUM_STREAM 2
+#define NUM_STREAM 3
     int nIStreams[NUM_STREAM];
     for (int i = 0; i < NUM_STREAM; i++)
     {
@@ -346,13 +346,6 @@ int main(int argc, char *argv[])
         double aValue = sumA(h_dA, n);
         long totalGpuElapased = timestampPostGpuCpuTransfer - timestampPreCpuGpuTransfer;
         printf("%lf %ld\n", aValue, totalGpuElapased);
-        // #ifndef NDEBUG
-        //         printf("<total_GPU_time> <CPU_GPU_transfer_time> <kernel_time> <GPU_CPU_transfer_time> <A-value> <nl>\n");
-        //         long cpuGpuTransferElapsed = timestampPreKernel - timestampPreCpuGpuTransfer;
-        //         long kernelElapsed = timestampPreGpuCpuTransfer - timestampPreKernel;
-        //         long gpuCpuTransferElapsed = timestampPostGpuCpuTransfer - timestampPreGpuCpuTransfer;
-        //         printf("%ld %ld %ld %ld %.6f\n", totalGpuElapased, cpuGpuTransferElapsed, kernelElapsed, gpuCpuTransferElapsed, aValue);
-        // #endif
     }
     else
     {
