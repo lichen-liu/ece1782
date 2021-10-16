@@ -236,26 +236,33 @@ int main(int argc, char *argv[])
     }
 
     /* Configuration */
-    int nIStream1 = n / 2;
-    int nIStream2 = n - nIStream1;
+#define NUM_STREAM 2
+    int nIStreams[NUM_STREAM];
+    for (int i = 0; i < NUM_STREAM; i++)
+    {
+        nIStreams[i] = n / NUM_STREAM;
+    }
+    nIStreams[NUM_STREAM - 1] += n % NUM_STREAM;
+
     dim3 d_blockDim;
     d_blockDim.x = 32;
-    d_blockDim.y = 16;
-    d_blockDim.z = 2;
-    dim3 d_gridDimStream1;
-    d_gridDimStream1.x = (n - 1) / d_blockDim.x + 1;
-    d_gridDimStream1.y = (n - 1) / d_blockDim.y + 1;
-    d_gridDimStream1.z = (nIStream1 - 1) / d_blockDim.z + 1;
-    dim3 d_gridDimStream2;
-    d_gridDimStream2.x = (n - 1) / d_blockDim.x + 1;
-    d_gridDimStream2.y = (n - 1) / d_blockDim.y + 1;
-    d_gridDimStream2.z = (nIStream2 - 1) / d_blockDim.z + 1;
+    d_blockDim.y = 32;
+    d_blockDim.z = 1; // must be 1
+
+    dim3 d_gridDimStreams[NUM_STREAM];
+    for (int i = 0; i < NUM_STREAM; i++)
+    {
+        d_gridDimStreams[i].x = (n - 1) / d_blockDim.x + 1;
+        d_gridDimStreams[i].y = (n - 1) / d_blockDim.y + 1;
+        d_gridDimStreams[i].z = (nIStreams[i] - 1) / d_blockDim.z + 1;
+    }
 
     /* Create Two Streams */
-    cudaStream_t d_stream1;
-    cudaStream_t d_stream2;
-    error = error || cudaStreamCreate(&d_stream1);
-    error = error || cudaStreamCreate(&d_stream2);
+    cudaStream_t d_streams[NUM_STREAM];
+    for (int i = 0; i < NUM_STREAM; i++)
+    {
+        error = error || cudaStreamCreate(&d_streams[i]);
+    }
     if (error)
     {
         printf("Error: cudaStreamCreate returns error\n");
@@ -264,43 +271,53 @@ int main(int argc, char *argv[])
 
     /* Copy Host Memory to Device Memory */
     long timestampPreCpuGpuTransfer = getTimeStamp();
+
     int nBIStream1 = nIStream1 + 1;
     size_t numElemBStream1 = (nBIStream1 + 1) * nB * nB;
-    cudaMemcpyAsync(d_B, h_B, numElemBStream1 * sizeof(float), cudaMemcpyHostToDevice, d_stream1);
+    cudaMemcpyAsync(d_B, h_B, numElemBStream1 * sizeof(float), cudaMemcpyHostToDevice, d_streams[0]);
     cudaStreamSynchronize(d_stream1);
-    int nBIStream2 = nIStream2;
-    size_t numElemBStream2 = (nBIStream2 - 1) * nB * nB;
-    cudaMemcpyAsync(d_B + numElemBStream1, h_B + numElemBStream1, numElemBStream2 * sizeof(float), cudaMemcpyHostToDevice, d_stream2);
-    if (numElemBStream1 + numElemBStream2 != numElemB)
+
+    int numElemBStreams = numElemBStream1;
+    for (int i = 1; i < NUM_STREAM; i++)
     {
-        printf("Error: cudaMemcpyAsync does not cover entire B (%ld + %ld != %ld)\n", numElemBStream1, numElemBStream2, numElemB);
-        return 0;
+        int nBIStreami = nIStreams[i];
+        size_t numElemBStreami = ((i==NUM_STREAM-1)?(nBIStreami-1:nBIStreami)) * nB * nB;
+        cudaMemcpyAsync(d_B + numElemBStreams, h_B + numElemBStreams, numElemBStreami * sizeof(float), cudaMemcpyHostToDevice, d_streams[i]);
+        numElemBStreams += numElemBStreami;
     }
 
-    // if (error)
-    // {
-    //     printf("Error: cudaMemcpy returns error\n");
-    //     return 0;
-    // }
+    if (numElemBStreams != numElemB)
+    {
+        printf("Error: cudaMemcpyAsync does not cover entire B (%ld != %ld)\n", numElemBStreams, numElemB);
+        return 0;
+    }
 
     /* Run Kernel */
     int d_smemNumElem = (d_blockDim.x + 2) * (d_blockDim.y + 2) * (d_blockDim.z + 2);
     size_t d_smemNumBytes = d_smemNumElem * sizeof(float);
-    jacobiRelaxation<<<d_gridDimStream1, d_blockDim, d_smemNumBytes, d_stream1>>>(d_A, d_B, n, 0);
-    jacobiRelaxation<<<d_gridDimStream2, d_blockDim, d_smemNumBytes, d_stream2>>>(d_A, d_B, n, nIStream1);
+    for (int i = 0; i < NUM_STREAM; i++)
+    {
+        jacobiRelaxation<<<d_gridDimStream1, d_blockDim, d_smemNumBytes, d_streams[i]>>>(d_A, d_B, n, (i == 0) ? 0 : nIStreams[i - 1]);
+    }
 
     /* Copy Device Memory to Host Memory */
-    size_t numElemAStream1 = nIStream1 * n * n;
-    cudaMemcpyAsync(h_dA, d_A, numElemAStream1 * sizeof(float), cudaMemcpyDeviceToHost, d_stream1);
-    size_t numElemAStream2 = nIStream2 * n * n;
-    cudaMemcpyAsync(h_dA + numElemAStream1, d_A + numElemAStream1, numElemAStream2 * sizeof(float), cudaMemcpyDeviceToHost, d_stream2);
-    if (numElemAStream1 + numElemAStream2 != numElem)
+    size_t numElemAStreams = 0;
+    for (int i = 0; i < NUM_STREAM; i++)
+    {
+        size_t numElemAStreami = nIStreams[i] * n * n;
+        cudaMemcpyAsync(h_dA + numElemAStreams, d_A + numElemAStreams, numElemAStreami * sizeof(float), cudaMemcpyDeviceToHost, d_streams[i]);
+        numElemAStreams += numElemAStreami;
+    }
+    if (numElemAStreams != numElem)
     {
         printf("Error: cudaMemcpyAsync does not cover entire A\n");
         return 0;
     }
-    cudaStreamSynchronize(d_stream1);
-    cudaStreamSynchronize(d_stream2);
+    for (int i = 0; i < NUM_STREAM; i++)
+    {
+        cudaStreamSynchronize(d_streams[i]);
+    }
+
     long timestampPostGpuCpuTransfer = getTimeStamp();
 
     /* Free Device Memory */
