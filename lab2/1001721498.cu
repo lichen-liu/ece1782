@@ -86,9 +86,10 @@ __host__ int checkA(float *Expected, float *Actual, int n)
                     if (Actual[ijkIndex] != -1)
                     {
                         printf("(i=%d, j=%d, k=%d) Expected=%f Actual=%f\n", i, j, k, Expected[ijkIndex], Actual[ijkIndex]);
+                        return 0;
                     }
 #endif
-                    //return 0;
+                    // return 0;
                 }
             }
         }
