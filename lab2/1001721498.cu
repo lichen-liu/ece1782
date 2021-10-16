@@ -269,7 +269,7 @@ int main(int argc, char *argv[])
     cudaStreamSynchronize(d_stream1);
     size_t numElemBStream2 = (nIStream2 - 1) * nB * nB;
     cudaMemcpyAsync(d_B + numElemBStream1, h_B + numElemBStream1, numElemBStream2 * sizeof(float), cudaMemcpyHostToDevice, d_stream2);
-    if (numElemBStream1 + numElemBStream2 != numElem)
+    if (numElemBStream1 + numElemBStream2 != numElemB)
     {
         printf("Error: cudaMemcpyAsync does not cover entire B\n");
         return 0;
