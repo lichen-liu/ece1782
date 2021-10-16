@@ -273,15 +273,18 @@ int main(int argc, char *argv[])
     long timestampPreCpuGpuTransfer = getTimeStamp();
 
     size_t numElemBStream1 = (nIStreams[0] + 1 + 1) * nB * nB;
-    cudaMemcpyAsync(d_B, h_B, numElemBStream1 * sizeof(float), cudaMemcpyHostToDevice, d_streams[0]);
-    cudaStreamSynchronize(d_streams[0]);
+    error = error || cudaMemcpyAsync(d_B, h_B, numElemBStream1 * sizeof(float), cudaMemcpyHostToDevice, d_streams[0]);
+    if (NUM_STREAM != 1)
+    {
+        cudaStreamSynchronize(d_streams[0]);
+    }
 
     int numElemBStreams = numElemBStream1;
     for (int i = 1; i < NUM_STREAM; i++)
     {
         int nBIStreami = nIStreams[i];
         size_t numElemBStreami = ((i == NUM_STREAM - 1) ? nBIStreami - 1 : nBIStreami) * nB * nB;
-        cudaMemcpyAsync(d_B + numElemBStreams, h_B + numElemBStreams, numElemBStreami * sizeof(float), cudaMemcpyHostToDevice, d_streams[i]);
+        error = error || cudaMemcpyAsync(d_B + numElemBStreams, h_B + numElemBStreams, numElemBStreami * sizeof(float), cudaMemcpyHostToDevice, d_streams[i]);
         numElemBStreams += numElemBStreami;
         if (i != NUM_STREAM - 1)
         {
@@ -289,10 +292,14 @@ int main(int argc, char *argv[])
             cudaStreamSynchronize(d_streams[i]);
         }
     }
-
     if (numElemBStreams != numElemB)
     {
         printf("Error: cudaMemcpyAsync does not cover entire B (%ld != %ld)\n", numElemBStreams, numElemB);
+        return 0;
+    }
+    if (error)
+    {
+        printf("Error: cudaMemcpyAsync B returns error %d\n", error);
         return 0;
     }
 
@@ -309,7 +316,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < NUM_STREAM; i++)
     {
         size_t numElemAStreami = nIStreams[i] * n * n;
-        cudaMemcpyAsync(h_dA + numElemAStreams, d_A + numElemAStreams, numElemAStreami * sizeof(float), cudaMemcpyDeviceToHost, d_streams[i]);
+        error = error || cudaMemcpyAsync(h_dA + numElemAStreams, d_A + numElemAStreams, numElemAStreami * sizeof(float), cudaMemcpyDeviceToHost, d_streams[i]);
         numElemAStreams += numElemAStreami;
     }
     if (numElemAStreams != numElem)
@@ -317,6 +324,12 @@ int main(int argc, char *argv[])
         printf("Error: cudaMemcpyAsync does not cover entire A\n");
         return 0;
     }
+    if (error)
+    {
+        printf("Error: cudaMemcpyAsync A returns error %d\n", error);
+        return 0;
+    }
+
     for (int i = 0; i < NUM_STREAM; i++)
     {
         cudaStreamSynchronize(d_streams[i]);
