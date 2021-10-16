@@ -149,7 +149,7 @@ __global__ void jacobiRelaxation(float *A, float *B, int n)
     if (threadIdx.z == 0)
     {
         s_data[localIdx - sizePerLocalI] = B[globalBIdx - sizePerGlobalBI];
-        s_data[localIdx + blockDim.z * sizePerLocalI] = B[globalBIdx + (blockDim.z - 1) * sizePerGlobalBI];
+        s_data[localIdx + blockDim.z * sizePerLocalI] = B[globalBIdx + blockDim.z * sizePerGlobalBI];
     }
     if (threadIdx.y == 0)
     {
@@ -162,8 +162,12 @@ __global__ void jacobiRelaxation(float *A, float *B, int n)
 
     // if (threadIdx.z == blockDim.z - 1)
     // {
-    //     // s_data[localIdx + blockDim.z * sizePerLocalI] = B[globalBIdx + (blockDim.z - 1) * sizePerGlobalBI];
+    //     // s_data[localIdx + (1 + blockDim.z) * sizePerLocalI] = B[globalBIdx + (blockDim.z - 1) * sizePerGlobalBI];
     //     s_data[localIdx + sizePerLocalI] = B[globalBIdx + sizePerGlobalBI];
+    //     localIdx
+    //     (threadIdx.z + 1) * sizePerLocalI + (threadIdx.y + 1) * sizePerLocalJ + (threadIdx.x + 1)
+    //     (0 + 1) * sizePerLocalI + (threadIdx.y + 1) * sizePerLocalJ + (threadIdx.x + 1)
+    //     (threadIdx.z + 1) * sizePerLocalI + (threadIdx.y + 1) * sizePerLocalJ + (threadIdx.x + 1)
     // }
     if (threadIdx.y == blockDim.y - 1)
     {
