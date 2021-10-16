@@ -83,7 +83,10 @@ __host__ int checkA(float *Expected, float *Actual, int n)
                 if (Expected[ijkIndex] != Actual[ijkIndex])
                 {
 #ifndef NDEBUG
-                    printf("(i=%d, j=%d, k=%d) Expected=%f Actual=%f\n", i, j, k, Expected[ijkIndex], Actual[ijkIndex]);
+                    if (Actual[ijkIndex] != -1)
+                    {
+                        printf("(i=%d, j=%d, k=%d) Expected=%f Actual=%f\n", i, j, k, Expected[ijkIndex], Actual[ijkIndex]);
+                    }
 #endif
                     //return 0;
                 }
