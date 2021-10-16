@@ -112,14 +112,14 @@ __host__ double sumA(float *A, int n)
     return sum;
 }
 
-__global__ void jacobiRelaxation(float *A, float *B, int n)
+__global__ void jacobiRelaxation(float *A, float *B, int n, int startingI)
 {
     extern __shared__ float s_data[];
 
     /* Global Index */
     int globalK = blockDim.x * blockIdx.x + threadIdx.x;
     int globalJ = blockDim.y * blockIdx.y + threadIdx.y;
-    int globalI = blockDim.z * blockIdx.z + threadIdx.z;
+    int globalI = blockDim.z * blockIdx.z + threadIdx.z + startingI;
     int globalIdx = globalI * n * n + globalJ * n + globalK;
 
     int nB = n + 1;
@@ -235,29 +235,61 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    /* Copy Host Memory to Device Memory */
-    long timestampPreCpuGpuTransfer = getTimeStamp();
-    error = error || cudaMemcpy(d_B, h_B, numBytesB, cudaMemcpyHostToDevice);
-    if (error)
-    {
-        printf("Error: cudaMemcpy returns error\n");
-        return 0;
-    }
-
-    /* Run Kernel */
-    long timestampPreKernel = getTimeStamp();
+    /* Configuration */
+    int nIStream1 = n / 2;
+    int nIStream2 = n - nIStream1;
     dim3 d_blockDim;
     d_blockDim.x = 32;
     d_blockDim.y = 16;
     d_blockDim.z = 2;
-    dim3 d_gridDim;
-    d_gridDim.x = (n - 1) / d_blockDim.x + 1;
-    d_gridDim.y = (n - 1) / d_blockDim.y + 1;
-    d_gridDim.z = (n - 1) / d_blockDim.z + 1;
+    dim3 d_gridDimStream1;
+    d_gridDimStream1.x = (n - 1) / d_blockDim.x + 1;
+    d_gridDimStream1.y = (n - 1) / d_blockDim.y + 1;
+    d_gridDimStream1.z = (nIStream1 - 1) / d_blockDim.z + 1;
+    dim3 d_gridDimStream1;
+    d_gridDimStream1.x = (n - 1) / d_blockDim.x + 1;
+    d_gridDimStream1.y = (n - 1) / d_blockDim.y + 1;
+    d_gridDimStream1.z = (nIStream2 - 1) / d_blockDim.z + 1;
+
+    /* Create Two Streams */
+    cudaStream_t d_stream1;
+    cudaStream_t d_stream2;
+    error = error || cudaStreamCreate(&d_stream1);
+    error = error || cudaStreamCreate(&d_stream2);
+    if (error)
+    {
+        printf("Error: cudaStreamCreate returns error\n");
+        return 0;
+    }
+
+    /* Copy Host Memory to Device Memory */
+    long timestampPreCpuGpuTransfer = getTimeStamp();
+    size_t numElemBStream1 = (nIStream1 + 1) * nB * nB;
+    cudaMemcpyAsync(d_B, h_B, numElemBStream1 * sizeof(float), cudaMemcpyHostToDevice, d_stream1);
+    cudaStreamSynchronize(d_stream1);
+    size_t numElemBStream2 = (nIstream2 - 1) * nB * nB;
+    cudaMemcpyAsync(d_B + numElemBStream1, h_B + numElemBStream1, numElemBStream2 * sizeof(float), cudaMemcpyHostToDevice, d_stream2);
+    if (numElemBStream1 + numElemBStream2 != numElem)
+    {
+        printf("Error: cudaMemcpyAsync does not cover entire B\n");
+        return 0;
+    }
+
+    // if (error)
+    // {
+    //     printf("Error: cudaMemcpy returns error\n");
+    //     return 0;
+    // }
+
+    /* Run Kernel */
+    long timestampPreKernel = getTimeStamp();
     int d_smemNumElem = (d_blockDim.x + 2) * (d_blockDim.y + 2) * (d_blockDim.z + 2);
     size_t d_smemNumBytes = d_smemNumElem * sizeof(float);
-    jacobiRelaxation<<<d_gridDim, d_blockDim, d_smemNumBytes>>>(d_A, d_B, n);
-    cudaDeviceSynchronize();
+    jacobiRelaxation<<<d_gridDimStream1, d_blockDim, d_smemNumBytes, d_stream1>>>(d_A, d_B, n, 0);
+    jacobiRelaxation<<<d_gridDimStream2, d_blockDim, d_smemNumBytes, d_stream2>>>(d_A, d_B, n, nIStream1);
+    cudaStreamSynchronize(d_stream1);
+    cudaStreamSynchronize(d_stream2);
+    // cudaDeviceSynchronize();
 
     /* Copy Device Memory to Host Memory */
     long timestampPreGpuCpuTransfer = getTimeStamp();
@@ -288,13 +320,13 @@ int main(int argc, char *argv[])
         double aValue = sumA(h_dA, n);
         long totalGpuElapased = timestampPostGpuCpuTransfer - timestampPreCpuGpuTransfer;
         printf("%lf %ld\n", aValue, totalGpuElapased);
-#ifndef NDEBUG
-        printf("<total_GPU_time> <CPU_GPU_transfer_time> <kernel_time> <GPU_CPU_transfer_time> <A-value> <nl>\n");
-        long cpuGpuTransferElapsed = timestampPreKernel - timestampPreCpuGpuTransfer;
-        long kernelElapsed = timestampPreGpuCpuTransfer - timestampPreKernel;
-        long gpuCpuTransferElapsed = timestampPostGpuCpuTransfer - timestampPreGpuCpuTransfer;
-        printf("%ld %ld %ld %ld %.6f\n", totalGpuElapased, cpuGpuTransferElapsed, kernelElapsed, gpuCpuTransferElapsed, aValue);
-#endif
+        // #ifndef NDEBUG
+        //         printf("<total_GPU_time> <CPU_GPU_transfer_time> <kernel_time> <GPU_CPU_transfer_time> <A-value> <nl>\n");
+        //         long cpuGpuTransferElapsed = timestampPreKernel - timestampPreCpuGpuTransfer;
+        //         long kernelElapsed = timestampPreGpuCpuTransfer - timestampPreKernel;
+        //         long gpuCpuTransferElapsed = timestampPostGpuCpuTransfer - timestampPreGpuCpuTransfer;
+        //         printf("%ld %ld %ld %ld %.6f\n", totalGpuElapased, cpuGpuTransferElapsed, kernelElapsed, gpuCpuTransferElapsed, aValue);
+        // #endif
     }
     else
     {
