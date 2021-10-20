@@ -1,16 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <sys/time.h>
 
 // Comment out this line to enable debug mode
 #define NDEBUG
 
 /* time stamp function in milliseconds */
-__host__ long getTimeStamp()
+__host__ double getTimeStamp()
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
-    return (long)tv.tv_usec / 1000 + tv.tv_sec * 1000;
+    return (double)tv.tv_usec / 1000000 + tv.tv_sec;
 }
 
 __host__ void initB(float *B, int nB)
@@ -205,7 +206,9 @@ int main(int argc, char *argv[])
     /* Allocate Host Memory */
     float *h_B = NULL;
     error = error || cudaHostAlloc((void **)&h_B, numBytesB, 0);
+#ifndef NDEBUG
     float *h_hA = (float *)malloc(numBytes);
+#endif
     float *h_dA = NULL;
     error = error || cudaHostAlloc((void **)&h_dA, numBytes, 0);
     if (error)
@@ -217,12 +220,10 @@ int main(int argc, char *argv[])
     /* Initialize Host Memory */
     initB(h_B, nB);
 #ifndef NDEBUG
-    long timestampPreCpuKernel = getTimeStamp();
-#endif
+    double timestampPreCpuKernel = getTimeStamp();
     jacobiRelaxationReference(h_hA, h_B, n);
-#ifndef NDEBUG
-    long timestampPostCpuKernel = getTimeStamp();
-    printf("CPU: %lf %ld\n", sumA(h_hA, n), timestampPostCpuKernel - timestampPreCpuKernel);
+    double timestampPostCpuKernel = getTimeStamp();
+    printf("CPU: %lf %ld\n", sumA(h_hA, n), (long)ceil(1000*(timestampPostCpuKernel - timestampPreCpuKernel)));
 #endif
 
     /* Allocate Device Memory */
@@ -270,8 +271,9 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    // TIMER BEGIN
     /* Copy Host Memory to Device Memory */
-    long timestampPreCpuGpuTransfer = getTimeStamp();
+    double timestampPreCpuGpuTransfer = getTimeStamp();
 
     size_t numElemBStream1 = 0;
     if (NUM_STREAM != 1)
@@ -349,7 +351,8 @@ int main(int argc, char *argv[])
         cudaStreamSynchronize(d_streams[i]);
     }
 
-    long timestampPostGpuCpuTransfer = getTimeStamp();
+    double timestampPostGpuCpuTransfer = getTimeStamp();
+    // TIMER END
 
     /* Free Device Memory */
     cudaFree(d_A);
@@ -357,33 +360,32 @@ int main(int argc, char *argv[])
     cudaFree(d_B);
     d_B = NULL;
 
-    /* Verify Device Result with Host Result */
-    error = error || !checkA(h_hA, h_dA, n);
-
-/* Output */
+    /* Output */
+    double aValue = sumA(h_dA, n);
+    long totalGpuElapased = (long)ceil(1000*(timestampPostGpuCpuTransfer - timestampPreCpuGpuTransfer));
+    printf("%lf %ld\n", aValue, totalGpuElapased);
+    
 #ifndef NDEBUG
     for (int i = 0; i < NUM_STREAM; i++)
     {
         printf("d_gridDimStream%d=(%d, %d, %d), d_blockDim=(%d, %d, %d), d_smemNumBytes=%ld\n", i, d_gridDimStreams[i].x, d_gridDimStreams[i].y, d_gridDimStreams[i].z, d_blockDim.x, d_blockDim.y, d_blockDim.z, d_smemNumBytes);
     }
-#endif
 
-    if (!error)
-    {
-        double aValue = sumA(h_dA, n);
-        long totalGpuElapased = timestampPostGpuCpuTransfer - timestampPreCpuGpuTransfer;
-        printf("%lf %ld\n", aValue, totalGpuElapased);
-    }
-    else
+    /* Verify Device Result with Host Result */
+    error = error || !checkA(h_hA, h_dA, n);
+    if(error)
     {
         printf("Error: GPU result does not with CPU result\n");
     }
-
+#endif
+    
     /* Free Host Memory */
     cudaFreeHost(h_dA);
     h_dA = NULL;
+#ifndef NDEBUG
     free(h_hA);
     h_hA = NULL;
+#endif
     cudaFreeHost(h_B);
     h_B = NULL;
 
